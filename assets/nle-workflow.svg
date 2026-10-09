@@ -101,11 +101,11 @@
     <path d="M43 166C102 160 112 134 166 142C212 149 211 102 255 111C287 118 291 82 344 89" fill="none" stroke="#60ebc4" stroke-width="4" filter="url(#tealGlow)">
       <animate attributeName="stroke-dasharray" values="0,420;420,0" dur="4s" repeatCount="indefinite"/>
     </path>
-    <text x="24" y="202" fill="#61dcb9" font-size="11" letter-spacing="1">POSITIVE NLE / 50% CATALYST EE - 97.9% PRODUCT EE</text>
+    <text x="24" y="202" fill="#61dcb9" font-size="11" letter-spacing="1">NLE CLASSIFICATION / REPORT READY</text>
   </g>
 
   <g font-family="Arial, sans-serif">
-    <text x="88" y="530" fill="#65e4c1" font-size="12" letter-spacing="3">SCREENING RUN  /  298.15 K  /  CONFORMERS 05</text>
+    <text x="88" y="530" fill="#65e4c1" font-size="12" letter-spacing="3">SCREENING RUN  /  CONFIGURABLE T  /  ENSEMBLE MODE</text>
     <text x="88" y="558" fill="#729096" font-size="12">STRUCTURE -&gt; ENSEMBLE -&gt; FREE ENERGY -&gt; SELECTIVITY</text>
     <text x="1115" y="558" fill="#729096" font-size="12" text-anchor="end">REPRODUCIBLE BY DESIGN</text>
   </g>
