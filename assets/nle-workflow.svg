@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">NLE Predictor computational workflow</title>
+  <desc id="desc">A dark, animated three-dimensional workflow from catalyst dimers through quantum chemistry to a predicted NLE curve.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="0.55" stop-color="#10283d"/>
+      <stop offset="1" stop-color="#24152d"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#6ef2df"/>
+      <stop offset="1" stop-color="#3bb7e7"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffd58a"/>
+      <stop offset="1" stop-color="#f08b5b"/>
+    </linearGradient>
+    <filter id="glowCyan"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="glowAmber"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse" patternTransform="skewY(-18)">
+      <path d="M50 0H0V50" fill="none" stroke="#71d9dc" stroke-opacity=".14" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="520" rx="28" fill="url(#bg)"/>
+  <path d="M0 370L1200 220V520H0Z" fill="url(#grid)"/>
+  <path d="M0 370L1200 220" stroke="#7ae9df" stroke-opacity=".28"/>
+  <text x="70" y="82" fill="#f3f8f7" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="2">NLE PREDICTOR</text>
+  <text x="72" y="116" fill="#9fb9c3" font-family="Arial, sans-serif" font-size="16" letter-spacing="1">STRUCTURE  /  ENERGY  /  SELECTIVITY</text>
+  <g fill="none" stroke="#6ef2df" stroke-width="2" stroke-linecap="round" opacity=".8">
+    <path d="M228 250H335M493 250H600M758 250H865"/>
+    <path d="M330 245l10 5-10 5M595 245l10 5-10 5M860 245l10 5-10 5"/>
+  </g>
+  <g font-family="Arial, sans-serif" text-anchor="middle">
+    <g transform="translate(160 250)">
+      <ellipse rx="72" ry="25" fill="#081827" stroke="#6ef2df" stroke-width="2" transform="rotate(-18)"/>
+      <ellipse rx="72" ry="25" fill="none" stroke="#6ef2df" stroke-width="2" transform="rotate(42)"/>
+      <circle r="25" fill="url(#cyan)" filter="url(#glowCyan)"/>
+      <circle cx="-38" cy="-18" r="10" fill="#f3f8f7"/><circle cx="38" cy="18" r="10" fill="#f3f8f7"/>
+      <text y="92" fill="#f3f8f7" font-size="17" font-weight="700">DIMER INPUT</text>
+      <text y="116" fill="#9fb9c3" font-size="13">R,R  +  R,S  XYZ</text>
+    </g>
+    <g transform="translate(425 250)">
+      <g fill="none" stroke="#ffd58a" stroke-width="2" opacity=".9">
+        <ellipse rx="67" ry="23" transform="rotate(-24)"><animateTransform attributeName="transform" type="rotate" from="-24" to="336" dur="7s" repeatCount="indefinite"/></ellipse>
+        <ellipse rx="67" ry="23" transform="rotate(56)"><animateTransform attributeName="transform" type="rotate" from="56" to="-304" dur="9s" repeatCount="indefinite"/></ellipse>
+      </g>
+      <circle r="27" fill="url(#amber)" filter="url(#glowAmber)"/>
+      <circle cx="-33" cy="-16" r="9" fill="#fff6df"/><circle cx="33" cy="16" r="9" fill="#fff6df"/>
+      <text y="92" fill="#f3f8f7" font-size="17" font-weight="700">CONFORMERS</text>
+      <text y="116" fill="#9fb9c3" font-size="13">CREST / xTB</text>
+    </g>
+    <g transform="translate(690 250)">
+      <path d="M-63 -42H55L68 -28V42H-63Z" fill="#0d2030" stroke="#6ef2df" stroke-width="2"/>
+      <path d="M55 -42V-28H68" fill="none" stroke="#6ef2df" stroke-width="2"/>
+      <path d="M-38 -12H38M-38 5H22M-38 22H32" stroke="#6ef2df" stroke-width="4" stroke-linecap="round" opacity=".75"/>
+      <circle cx="-45" cy="-12" r="4" fill="#ffd58a"/>
+      <text y="92" fill="#f3f8f7" font-size="17" font-weight="700">FREE ENERGY</text>
+      <text y="116" fill="#9fb9c3" font-size="13">ORCA / DFT / GIBBS</text>
+    </g>
+    <g transform="translate(955 250)">
+      <path d="M-70 45V-42M-70 45H72" stroke="#9fb9c3" stroke-width="2"/>
+      <path d="M-60 30C-20 18-30 -5 2 -10C30 -15 22 -47 67 -38" fill="none" stroke="#6ef2df" stroke-width="4" filter="url(#glowCyan)"><animate attributeName="stroke-dasharray" values="0,260;260,0" dur="3.5s" repeatCount="indefinite"/></path>
+      <path d="M-60 30L68 -38" fill="none" stroke="#ffd58a" stroke-width="2" stroke-dasharray="6 7"/>
+      <text y="92" fill="#f3f8f7" font-size="17" font-weight="700">NLE OUTPUT</text>
+      <text y="116" fill="#9fb9c3" font-size="13">KAGAN ML2 MODEL</text>
+    </g>
+  </g>
+  <text x="70" y="470" fill="#6ef2df" font-family="Arial, sans-serif" font-size="13" letter-spacing="2">THERMODYNAMIC SCREENING FOR ASYMMETRIC CATALYSIS</text>
+</svg>
