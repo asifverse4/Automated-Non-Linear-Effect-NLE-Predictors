@@ -4,7 +4,7 @@ If NLE // ATLAS contributes to published work, please cite the repository and th
 
 ## Software Citation
 
-> NLE // ATLAS Contributors. *NLE // ATLAS: thermodynamic screening for asymmetric catalyst design*. 2026. GitHub repository: https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors
+> Asif Raza. *NLE // ATLAS: thermodynamic screening for asymmetric catalyst design*. 2026. GitHub repository: https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors
 
 For reproducibility, include the release tag or commit SHA, input structures, CREST/xTB and ORCA versions, density-functional settings, solvent model, temperature, conformer count, and generated run manifest.
 
@@ -12,7 +12,7 @@ For reproducibility, include the release tag or commit SHA, input structures, CR
 
 ```bibtex
 @software{nle_atlas_2026,
-  author  = {{NLE // ATLAS Contributors}},
+  author  = {Raza, Asif},
   title   = {{NLE // ATLAS: thermodynamic screening for asymmetric catalyst design}},
   year    = {2026},
   url     = {https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors},
