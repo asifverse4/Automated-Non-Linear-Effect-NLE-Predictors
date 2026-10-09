@@ -217,6 +217,46 @@ def write_prediction_report(
     logger.info("Predicted product ee at 50%% catalyst ee: %.2f%%", product_at_50 * 100)
     logger.info(f"Prediction report saved to {report_path}")
 
+
+def write_sensitivity_report(output_dir, ee_cat, delta_g_kcal, temp, k_homo):
+    """Write a surrogate sensitivity table around the baseline prediction."""
+    scenarios = [
+        ("baseline", delta_g_kcal, temp, k_homo),
+        ("delta_g_minus_0.5_kcal", delta_g_kcal - 0.5, temp, k_homo),
+        ("delta_g_plus_0.5_kcal", delta_g_kcal + 0.5, temp, k_homo),
+        ("temperature_minus_20K", delta_g_kcal, temp - 20, k_homo),
+        ("temperature_plus_20K", delta_g_kcal, temp + 20, k_homo),
+        ("k_homo_x0.1", delta_g_kcal, temp, k_homo * 0.1),
+        ("k_homo_x10", delta_g_kcal, temp, k_homo * 10),
+    ]
+    report_path = os.path.join(output_dir, "nle_sensitivity.csv")
+    with open(report_path, 'w', newline='') as sensitivity_file:
+        writer = csv.writer(sensitivity_file)
+        writer.writerow([
+            "scenario",
+            "delta_g_kcal_per_mol",
+            "temperature_K",
+            "K_homo",
+            "product_ee_at_50_percent_catalyst_ee",
+            "maximum_product_ee",
+        ])
+        for name, scenario_delta_g, scenario_temp, scenario_k_homo in scenarios:
+            scenario_calculator = NLECalculator(temp=scenario_temp)
+            product_ee = scenario_calculator.simulate_kagan_model(
+                ee_cat,
+                scenario_delta_g,
+                k_homo_abs=scenario_k_homo,
+            )
+            writer.writerow([
+                name,
+                f"{scenario_delta_g:.6f}",
+                f"{scenario_temp:.2f}",
+                f"{scenario_k_homo:.6g}",
+                f"{np.interp(0.5, ee_cat, product_ee) * 100:.4f}",
+                f"{np.max(product_ee) * 100:.4f}",
+            ])
+    logger.info(f"Surrogate sensitivity report saved to {report_path}")
+
 class Config:
     """Configuration and dependency management for quantum chemistry binaries."""
     CREST_CMD = "crest"
@@ -602,6 +642,7 @@ def main():
     parser.add_argument('--outdir', type=str, default="calc_outputs", help="Directory to store intermediate and final calculations")
     parser.add_argument('--mock', action='store_true', help="Force mock execution (skip actual CREST/ORCA runs)")
     parser.add_argument('--dry-run', action='store_true', help="Validate inputs and print the planned commands without running chemistry")
+    parser.add_argument('--sensitivity', action='store_true', help="Write surrogate sensitivity analysis for model parameters")
     
     args = parser.parse_args()
 
@@ -620,6 +661,8 @@ def main():
 
     if args.temp <= 0:
         parser.error("--temp must be greater than zero")
+    if args.sensitivity and args.temp <= 20:
+        parser.error("--temp must be greater than 20 K when using --sensitivity")
     if args.cores <= 0:
         parser.error("--cores must be greater than zero")
     if args.conformers <= 0:
@@ -751,6 +794,14 @@ def main():
         ee_prod_range,
         {"RR": len(rr_energies), "RS": len(rs_energies)},
     )
+    if args.sensitivity:
+        write_sensitivity_report(
+            args.outdir,
+            ee_cat_range,
+            delta_g,
+            args.temp,
+            args.khomo,
+        )
     write_run_manifest(
         args.outdir,
         args,

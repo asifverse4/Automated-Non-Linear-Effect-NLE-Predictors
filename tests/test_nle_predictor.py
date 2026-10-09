@@ -5,6 +5,7 @@ from nle_predictor import (
     DFTEvaluator,
     NLECalculator,
     boltzmann_weighted_free_energy,
+    write_sensitivity_report,
     validate_orca_output,
     validate_xyz_file,
 )
@@ -81,6 +82,17 @@ def test_boltzmann_ensemble_is_lower_than_its_lowest_member():
 def test_boltzmann_ensemble_rejects_invalid_temperature():
     with pytest.raises(ValueError, match="Temperature"):
         boltzmann_weighted_free_energy([-100.0], 0)
+
+
+def test_sensitivity_report_writes_parameter_scenarios(tmp_path):
+    write_sensitivity_report(
+        str(tmp_path), np.linspace(0, 1, 11), -2.0, 298.15, 1e5
+    )
+
+    lines = (tmp_path / "nle_sensitivity.csv").read_text().splitlines()
+    assert len(lines) == 8
+    assert lines[0].startswith("scenario,delta_g_kcal_per_mol")
+    assert "delta_g_minus_0.5_kcal" in lines[2]
 
 
 def test_mass_balance_preserves_catalyst_material():

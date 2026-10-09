@@ -51,6 +51,8 @@ catalyst-ee/product-ee data, and a publication-ready plot.
 - **Machine-readable results:** `nle_report.json` records free energies,
   association constants, NLE classification, 50% catalyst performance, and
   amplification metrics.
+- **Sensitivity analysis:** `--sensitivity` perturbs free energy, temperature,
+  and `K_homo` to expose model dependence in a transparent CSV table.
 - **Audit trail:** `run_manifest.json` records arguments, input hashes, Python
   version, platform, and timestamp.
 
@@ -139,6 +141,20 @@ export, and plotting without running CREST or ORCA:
 python nle_predictor.py --mock --outdir calc_outputs
 ```
 
+Generate a surrogate sensitivity table alongside the normal outputs:
+
+```bash
+python nle_predictor.py \
+  --rr inputs/dimer_RR.xyz \
+  --rs inputs/dimer_RS.xyz \
+  --outdir calc_outputs \
+  --sensitivity
+```
+
+Sensitivity values are model perturbations, not experimental confidence
+intervals. They are intended to show how strongly the predicted NLE depends on
+the assumed thermodynamic inputs.
+
 Mock energies are synthetic and must not be interpreted as chemical results.
 Mock mode must be requested explicitly; a real run stops if CREST or ORCA is
 not available.
@@ -167,6 +183,7 @@ parameters before using charged or open-shell complexes.
 | `--outdir` | `calc_outputs` | Calculation and result directory |
 | `--mock` | off | Explicitly use deterministic synthetic chemistry outputs |
 | `--dry-run` | off | Validate and preview commands without running chemistry |
+| `--sensitivity` | off | Write surrogate model sensitivity scenarios |
 
 ## Outputs
 
@@ -186,6 +203,7 @@ calc_outputs/
 |-- opt_RS_conf001.inp / .out
 |-- nle_results.csv
 |-- nle_report.json
+|-- nle_sensitivity.csv  (optional)
 |-- run_manifest.json
 `-- nle_curve.png
 ```
