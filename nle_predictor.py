@@ -93,6 +93,73 @@ def write_run_manifest(output_dir, args, input_files, missing_dependencies):
         manifest_file.write('\n')
     logger.info(f"Run manifest saved to {manifest_path}")
 
+
+def write_prediction_report(
+    output_dir,
+    args,
+    g_rr,
+    g_rs,
+    delta_g_kcal,
+    k_homo,
+    k_hetero,
+    ee_cat,
+    ee_prod,
+):
+    """Write a structured summary of the thermodynamic prediction."""
+    product_at_50 = float(np.interp(0.5, ee_cat, ee_prod))
+    amplification = np.divide(
+        ee_prod[1:], ee_cat[1:], out=np.zeros_like(ee_prod[1:]), where=ee_cat[1:] > 0
+    )
+    difference = ee_prod - ee_cat
+    tolerance = 1e-6
+    if np.max(difference) > tolerance:
+        classification = "positive NLE"
+    elif np.min(difference) < -tolerance:
+        classification = "negative NLE"
+    else:
+        classification = "near-linear"
+
+    report = {
+        "model": "Kagan ML2 reservoir",
+        "temperature_K": args.temp,
+        "electronic_state": {
+            "charge": args.charge,
+            "multiplicity": args.multiplicity,
+        },
+        "electronic_structure": {
+            "functional": args.functional,
+            "basis": args.basis,
+            "dispersion": args.dispersion,
+            "solvent": args.solvent,
+        },
+        "free_energy": {
+            "RR_hartree": g_rr,
+            "RS_hartree": g_rs,
+            "RS_minus_RR_kcal_per_mol": delta_g_kcal,
+        },
+        "association_constants": {
+            "K_homo": k_homo,
+            "K_hetero": k_hetero,
+            "K_hetero_over_K_homo": k_hetero / k_homo if k_homo else None,
+        },
+        "nle_assessment": {
+            "classification": classification,
+            "product_ee_at_50_percent_catalyst_ee_percent": product_at_50 * 100,
+            "maximum_product_ee_percent": float(np.max(ee_prod) * 100),
+            "maximum_ee_amplification": float(np.max(amplification)),
+        },
+        "data_file": "nle_results.csv",
+        "plot_file": "nle_curve.png",
+    }
+    report_path = os.path.join(output_dir, "nle_report.json")
+    with open(report_path, 'w') as report_file:
+        json.dump(report, report_file, indent=2)
+        report_file.write('\n')
+
+    logger.info("NLE assessment: %s", classification)
+    logger.info("Predicted product ee at 50%% catalyst ee: %.2f%%", product_at_50 * 100)
+    logger.info(f"Prediction report saved to {report_path}")
+
 class Config:
     """Configuration and dependency management for quantum chemistry binaries."""
     CREST_CMD = "crest"
@@ -181,7 +248,17 @@ class DFTEvaluator:
         self.cores = cores
         self.mock_mode = mock_mode
 
-    def generate_input(self, xyz_file, run_name, functional="B3LYP", basis="def2-SVP", dispersion="D4", solvent=None):
+    def generate_input(
+        self,
+        xyz_file,
+        run_name,
+        functional="B3LYP",
+        basis="def2-SVP",
+        dispersion="D4",
+        solvent=None,
+        charge=0,
+        multiplicity=1,
+    ):
         """Generates an ORCA input file for geometry optimization and frequency calculations."""
         validate_xyz_file(xyz_file)
         inp_path = f"{run_name}.inp"
@@ -203,7 +280,9 @@ class DFTEvaluator:
             
         with open(inp_path, 'w') as f:
             f.write(header)
-            f.write(f"%coords\n  CTyp xyz\n  Charge 0\n  Mult 1\n  coords\n")
+            f.write(
+                f"%coords\n  CTyp xyz\n  Charge {charge}\n  Mult {multiplicity}\n  coords\n"
+            )
             for line in coords:
                 if line.strip():
                     f.write(f"    {line.strip()}\n")
@@ -334,6 +413,8 @@ class NLECalculator:
         # K_RS / K_RR = 2 * exp(-DeltaG / RT)  --> factor of 2 is the symmetry number
         ratio = 2.0 * np.exp(-delta_g_kcal / (GAS_CONSTANT_R * self.temp))
         k_hetero_abs = k_homo_abs * ratio
+        self.last_k_hetero = k_hetero_abs
+        self.last_k_ratio = ratio
         
         logger.info(f"Assumed K_homo (RR binding): {k_homo_abs:.2e}")
         logger.info(f"Calculated K_hetero (RS binding): {k_hetero_abs:.2e}")
@@ -422,6 +503,8 @@ def main():
     parser.add_argument('--temp', type=float, default=298.15, help="Temperature in Kelvin")
     parser.add_argument('--solvent', type=str, default=None, help="Solvent name (e.g., toluene, water) for CREST and ORCA CPCM")
     parser.add_argument('--khomo', type=float, default=1e5, help="Assumed absolute dimerization constant for RR (ML2 reservoir)")
+    parser.add_argument('--charge', type=int, default=0, help="Molecular charge for ORCA (default: 0)")
+    parser.add_argument('--multiplicity', type=int, default=1, help="Spin multiplicity for ORCA (default: 1)")
     
     # Computational Details
     parser.add_argument('--functional', type=str, default="B3LYP", help="DFT Functional")
@@ -432,6 +515,7 @@ def main():
     # Workflow directives
     parser.add_argument('--outdir', type=str, default="calc_outputs", help="Directory to store intermediate and final calculations")
     parser.add_argument('--mock', action='store_true', help="Force mock execution (skip actual CREST/ORCA runs)")
+    parser.add_argument('--dry-run', action='store_true', help="Validate inputs and print the planned commands without running chemistry")
     
     args = parser.parse_args()
 
@@ -441,7 +525,7 @@ def main():
     
     # 0. Check dependencies
     missing_deps = Config.check_dependencies()
-    if missing_deps and not args.mock:
+    if missing_deps and not args.mock and not args.dry_run:
         parser.error(
             "Missing computational binaries: " + ", ".join(missing_deps) +
             ". Install them or rerun with --mock for a synthetic demonstration."
@@ -454,6 +538,8 @@ def main():
         parser.error("--cores must be greater than zero")
     if args.khomo < 0:
         parser.error("--khomo must be non-negative")
+    if args.multiplicity <= 0:
+        parser.error("--multiplicity must be greater than zero")
     
     # 1. Setup Inputs
     if not os.path.exists(args.rr) or not os.path.exists(args.rs):
@@ -464,6 +550,33 @@ def main():
 
     validate_xyz_file(args.rr)
     validate_xyz_file(args.rs)
+
+    if args.dry_run:
+        solvent_flag = f" -alpb {args.solvent}" if args.solvent else ""
+        logger.info("Dry run: no calculations or output files will be created.")
+        logger.info(
+            "CREST RR: %s %s -T %s%s",
+            Config.CREST_CMD,
+            os.path.abspath(args.rr),
+            args.cores,
+            solvent_flag,
+        )
+        logger.info(
+            "CREST RS: %s %s -T %s%s",
+            Config.CREST_CMD,
+            os.path.abspath(args.rs),
+            args.cores,
+            solvent_flag,
+        )
+        logger.info(
+            "ORCA: %s [generated opt_RR.inp and opt_RS.inp] (%s/%s, charge=%s, multiplicity=%s)",
+            Config.ORCA_CMD,
+            args.functional,
+            args.basis,
+            args.charge,
+            args.multiplicity,
+        )
+        return
 
     os.makedirs(args.outdir, exist_ok=True)
     
@@ -478,8 +591,26 @@ def main():
     dft = DFTEvaluator(cores=args.cores, mock_mode=mock_mode)
     
     # Generate inputs
-    inp_rr_name = dft.generate_input(best_rr, "opt_RR", args.functional, args.basis, args.dispersion, args.solvent)
-    inp_rs_name = dft.generate_input(best_rs, "opt_RS", args.functional, args.basis, args.dispersion, args.solvent)
+    inp_rr_name = dft.generate_input(
+        best_rr,
+        "opt_RR",
+        args.functional,
+        args.basis,
+        args.dispersion,
+        args.solvent,
+        args.charge,
+        args.multiplicity,
+    )
+    inp_rs_name = dft.generate_input(
+        best_rs,
+        "opt_RS",
+        args.functional,
+        args.basis,
+        args.dispersion,
+        args.solvent,
+        args.charge,
+        args.multiplicity,
+    )
     
     # Move them to working directory
     inp_rr_path = os.path.join(args.outdir, inp_rr_name)
@@ -514,6 +645,17 @@ def main():
         ee_cat_range,
         ee_prod_range,
         save_path=os.path.join(args.outdir, "nle_curve.png")
+    )
+    write_prediction_report(
+        args.outdir,
+        args,
+        g_rr,
+        g_rs,
+        delta_g,
+        args.khomo,
+        nle_calc.last_k_hetero,
+        ee_cat_range,
+        ee_prod_range,
     )
     write_run_manifest(args.outdir, args, [args.rr, args.rs], missing_deps)
     

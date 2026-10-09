@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <strong>Computational discovery of non-linear effects in asymmetric catalysis.</strong><br>
-  From dimer structures to thermodynamic free energies and predicted product ee.
+  <strong>Thermodynamic screening for asymmetric catalyst design.</strong><br>
+  A reproducible CREST, ORCA, and Kagan-model workflow for non-linear effects.
 </p>
 
 <p align="center">
@@ -18,14 +18,28 @@
 
 ## Overview
 
-NLE Predictor automates a computational screening workflow for asymmetric
-catalyst systems that may display a positive non-linear effect. It compares
-homochiral (`R,R`) and heterochiral (`R,S`) catalyst dimers, estimates their
-relative thermodynamic stability, and propagates that difference through a
-Kagan-style mass-balance model.
+NLE Predictor is a reproducible computational screening instrument for
+asymmetric catalyst design. It compares homochiral (`R,R`) and heterochiral
+(`R,S`) catalyst dimers, estimates their relative thermodynamic stability, and
+propagates that difference through a Kagan-style mass-balance model.
 
-The result is a reproducible set of quantum-chemistry files, thermodynamic
-metrics, a catalyst-ee/product-ee data table, and a publication-ready plot.
+Each run preserves the source structures, calculation inputs and outputs,
+thermodynamic metrics, structured JSON reports, catalyst-ee/product-ee data,
+and a publication-ready plot.
+
+### Built for serious screening
+
+- **Explicit execution modes:** real runs never silently become mock runs;
+  `--dry-run` previews the calculation plan without executing chemistry.
+- **Electronic-state control:** configure molecular charge and spin
+  multiplicity for ORCA input generation.
+- **Numerical safeguards:** validate XYZ structures, reject invalid
+  concentrations, and enforce mass-balance residual tolerances.
+- **Machine-readable results:** `nle_report.json` records free energies,
+  association constants, NLE classification, 50% catalyst performance, and
+  amplification metrics.
+- **Audit trail:** `run_manifest.json` records arguments, input hashes, Python
+  version, platform, and timestamp.
 
 ## Workflow
 
@@ -88,7 +102,18 @@ python nle_predictor.py \
   --rs inputs/dimer_RS.xyz \
   --outdir calc_outputs \
   --solvent toluene \
-  --cores 8
+  --cores 8 \
+  --charge 0 \
+  --multiplicity 1
+```
+
+Preview the plan without running CREST or ORCA:
+
+```bash
+python nle_predictor.py \
+  --rr inputs/dimer_RR.xyz \
+  --rs inputs/dimer_RS.xyz \
+  --dry-run
 ```
 
 ### 4. Run the pipeline demonstration
@@ -118,12 +143,15 @@ parameters before using charged or open-shell complexes.
 | `--temp` | `298.15` | Temperature in kelvin |
 | `--solvent` | none | CREST solvent and ORCA CPCM solvent |
 | `--khomo` | `1e5` | Absolute homochiral association constant |
+| `--charge` | `0` | Molecular charge passed to ORCA |
+| `--multiplicity` | `1` | Spin multiplicity passed to ORCA |
 | `--functional` | `B3LYP` | ORCA density functional |
 | `--basis` | `def2-SVP` | ORCA basis set |
 | `--dispersion` | `D4` | Dispersion correction |
 | `--cores` | `4` | CREST and ORCA parallel workers |
 | `--outdir` | `calc_outputs` | Calculation and result directory |
 | `--mock` | off | Explicitly use deterministic synthetic chemistry outputs |
+| `--dry-run` | off | Validate and preview commands without running chemistry |
 
 ## Outputs
 
@@ -142,12 +170,15 @@ calc_outputs/
 |-- opt_RS.inp
 |-- opt_RS.out
 |-- nle_results.csv
+|-- nle_report.json
 |-- run_manifest.json
 `-- nle_curve.png
 ```
 
 - `nle_results.csv` contains catalyst ee (%) and product ee (%), ready for
   OriginLab, GraphPad Prism, Excel, or custom analysis.
+- `nle_report.json` summarizes the thermodynamics and classifies the result as
+  positive NLE, negative NLE, or near-linear.
 - `nle_curve.png` compares the predicted NLE against the ideal linear baseline
   at 600 dpi.
 - `opt_*.inp` and `opt_*.out` preserve the ORCA calculation inputs and logs.

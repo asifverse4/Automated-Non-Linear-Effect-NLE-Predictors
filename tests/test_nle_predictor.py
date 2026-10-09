@@ -31,6 +31,20 @@ def test_extract_free_energy_uses_final_energy(tmp_path):
     assert energy == pytest.approx(-99.87654321)
 
 
+def test_generate_input_preserves_electronic_state(tmp_path, monkeypatch):
+    xyz_path = tmp_path / "charged_dimer.xyz"
+    xyz_path.write_text("2\ncharged test\nH 0.0 0.0 0.0\nH 0.0 0.0 0.74\n")
+    monkeypatch.chdir(tmp_path)
+
+    input_path = DFTEvaluator().generate_input(
+        str(xyz_path), "charged", charge=-1, multiplicity=2
+    )
+
+    content = (tmp_path / input_path).read_text()
+    assert "Charge -1" in content
+    assert "Mult 2" in content
+
+
 def test_mass_balance_preserves_catalyst_material():
     calculator = NLECalculator()
     monomer_r, monomer_s = calculator.solve_mass_balance(0.25, 1e5, 1e2)
