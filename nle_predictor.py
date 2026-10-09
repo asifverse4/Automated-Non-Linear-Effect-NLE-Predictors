@@ -88,7 +88,46 @@ def boltzmann_weighted_free_energy(energies_hartree, temperature):
     return ensemble_kcal / HARTREE_TO_KCAL
 
 
-def write_run_manifest(output_dir, args, input_files, missing_dependencies):
+def validate_orca_output(out_file):
+    """Validate that an ORCA output completed and has no imaginary modes."""
+    with open(out_file, 'r') as output:
+        content = output.read()
+
+    if "ORCA TERMINATED NORMALLY" not in content:
+        raise RuntimeError(f"ORCA did not terminate normally: {out_file}")
+
+    imaginary_match = re.search(
+        r"(?:Number of imaginary frequencies|imaginary frequencies)\s*[:=]?\s*(\d+)",
+        content,
+        flags=re.IGNORECASE,
+    )
+    if imaginary_match and int(imaginary_match.group(1)) > 0:
+        raise RuntimeError(f"ORCA output contains imaginary frequencies: {out_file}")
+
+
+def collect_software_versions():
+    """Return version strings for the external chemistry executables."""
+    versions = {}
+    for name, command in (("crest", Config.CREST_CMD), ("orca", Config.ORCA_CMD)):
+        if shutil.which(command) is None:
+            versions[name] = "unavailable"
+            continue
+        try:
+            result = subprocess.run(
+                [command, "--version"],
+                capture_output=True,
+                text=True,
+                timeout=15,
+                check=False,
+            )
+            version_output = (result.stdout or result.stderr).strip().splitlines()
+            versions[name] = version_output[0] if version_output else "unknown"
+        except (OSError, subprocess.SubprocessError) as error:
+            versions[name] = f"unavailable: {error.__class__.__name__}"
+    return versions
+
+
+def write_run_manifest(output_dir, args, input_files, missing_dependencies, software_versions):
     """Write machine-readable provenance for a workflow run."""
     manifest = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -97,6 +136,7 @@ def write_run_manifest(output_dir, args, input_files, missing_dependencies):
         "arguments": vars(args),
         "mock_mode": bool(args.mock),
         "missing_dependencies": missing_dependencies,
+        "software_versions": software_versions,
         "input_files": {
             path: {"sha256": sha256_file(path), "size_bytes": os.path.getsize(path)}
             for path in input_files
@@ -334,6 +374,7 @@ class DFTEvaluator:
 
     def extract_free_energy(self, out_file):
         """Parses ORCA output to extract the Final Gibbs Free Energy in Hartrees."""
+        validate_orca_output(out_file)
         gibbs_energy = None
         energy_pattern = re.compile(
             r"Final Gibbs free energy\s+([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?)"
@@ -362,6 +403,8 @@ class DFTEvaluator:
             os.makedirs(output_dir, exist_ok=True)
             with open(out_path, 'w') as out_f:
                 energy = -1000.00366 if "RS" in inp_file else -1000.00000
+                out_f.write("ORCA TERMINATED NORMALLY\n")
+                out_f.write("Number of imaginary frequencies        0\n")
                 out_f.write(f"Final Gibbs free energy             {energy:.6f} Eh\n")
             return out_path
 
@@ -708,7 +751,13 @@ def main():
         ee_prod_range,
         {"RR": len(rr_energies), "RS": len(rs_energies)},
     )
-    write_run_manifest(args.outdir, args, [args.rr, args.rs], missing_deps)
+    write_run_manifest(
+        args.outdir,
+        args,
+        [args.rr, args.rs],
+        missing_deps,
+        collect_software_versions(),
+    )
     
     logger.info("="*55)
     logger.info("Workflow completed successfully!")

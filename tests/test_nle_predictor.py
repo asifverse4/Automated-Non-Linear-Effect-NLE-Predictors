@@ -5,6 +5,7 @@ from nle_predictor import (
     DFTEvaluator,
     NLECalculator,
     boltzmann_weighted_free_energy,
+    validate_orca_output,
     validate_xyz_file,
 )
 
@@ -27,6 +28,8 @@ def test_validate_xyz_file_rejects_bad_coordinates(tmp_path):
 def test_extract_free_energy_uses_final_energy(tmp_path):
     output_path = tmp_path / "orca.out"
     output_path.write_text(
+        "ORCA TERMINATED NORMALLY\n"
+        "Number of imaginary frequencies        0\n"
         "SCF energy -100.0\n"
         "Final Gibbs free energy             -99.87654321 Eh\n"
     )
@@ -34,6 +37,25 @@ def test_extract_free_energy_uses_final_energy(tmp_path):
     energy = DFTEvaluator().extract_free_energy(str(output_path))
 
     assert energy == pytest.approx(-99.87654321)
+
+
+def test_orca_validation_rejects_incomplete_output(tmp_path):
+    output_path = tmp_path / "incomplete.out"
+    output_path.write_text("Final Gibbs free energy -99.0 Eh\n")
+
+    with pytest.raises(RuntimeError, match="terminate normally"):
+        validate_orca_output(str(output_path))
+
+
+def test_orca_validation_rejects_imaginary_frequency(tmp_path):
+    output_path = tmp_path / "imaginary.out"
+    output_path.write_text(
+        "ORCA TERMINATED NORMALLY\n"
+        "Number of imaginary frequencies        1\n"
+    )
+
+    with pytest.raises(RuntimeError, match="imaginary frequencies"):
+        validate_orca_output(str(output_path))
 
 
 def test_generate_input_preserves_electronic_state(tmp_path, monkeypatch):

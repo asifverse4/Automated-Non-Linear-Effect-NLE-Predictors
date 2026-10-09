@@ -46,6 +46,8 @@ catalyst-ee/product-ee data, and a publication-ready plot.
   multiplicity for ORCA input generation.
 - **Numerical safeguards:** validate XYZ structures, reject invalid
   concentrations, and enforce mass-balance residual tolerances.
+- **Quantum-chemistry validation:** accept Gibbs energies only from ORCA jobs
+  that terminate normally and report zero imaginary frequencies.
 - **Machine-readable results:** `nle_report.json` records free energies,
   association constants, NLE classification, 50% catalyst performance, and
   amplification metrics.
@@ -199,7 +201,7 @@ calc_outputs/
 - `opt_*.inp` and `opt_*.out` preserve the ORCA calculation inputs and logs.
 - `crest_*/crest_best.xyz` preserves the conformer passed to ORCA.
 - `run_manifest.json` records arguments, input hashes, platform, and Python
-  version for reproducibility.
+  version, plus detected CREST and ORCA versions for reproducibility.
 - Console logs report $G_{RR}$, $G_{RS}$, relative stability, `K_homo`, and
   `K_hetero`.
 
@@ -209,6 +211,8 @@ calc_outputs/
 - Preserve the input XYZ files, command line, solvent, temperature, functional,
   basis, dispersion model, and core count with the generated `calc_outputs/`.
 - Review ORCA convergence and frequency results before accepting a free energy.
+- ORCA outputs must contain normal termination, a final Gibbs free energy, and
+  zero imaginary frequencies; incomplete jobs are rejected.
 - Real runs fail when a mass-balance point does not converge or has a large
   residual; no approximate chemistry result is returned.
 - Dummy hydrogen structures are created only in explicit `--mock` mode when
