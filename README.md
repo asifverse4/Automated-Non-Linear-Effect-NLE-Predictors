@@ -64,6 +64,12 @@ $R = 0.00198720425864083$ kcal mol$^{-1}$ K$^{-1}$.
 python -m pip install -r requirements.txt
 ```
 
+For development and testing:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
 ### 2. Install computational chemistry software
 
 Install CREST with xTB and ORCA according to their respective documentation.
@@ -95,8 +101,8 @@ python nle_predictor.py --mock --outdir calc_outputs
 ```
 
 Mock energies are synthetic and must not be interpreted as chemical results.
-When required binaries are unavailable, the current script automatically uses
-the same mock path and logs that decision.
+Mock mode must be requested explicitly; a real run stops if CREST or ORCA is
+not available.
 
 ## Inputs
 
@@ -117,7 +123,7 @@ parameters before using charged or open-shell complexes.
 | `--dispersion` | `D4` | Dispersion correction |
 | `--cores` | `4` | CREST and ORCA parallel workers |
 | `--outdir` | `calc_outputs` | Calculation and result directory |
-| `--mock` | off | Use deterministic synthetic chemistry outputs |
+| `--mock` | off | Explicitly use deterministic synthetic chemistry outputs |
 
 ## Outputs
 
@@ -136,6 +142,7 @@ calc_outputs/
 |-- opt_RS.inp
 |-- opt_RS.out
 |-- nle_results.csv
+|-- run_manifest.json
 `-- nle_curve.png
 ```
 
@@ -145,6 +152,8 @@ calc_outputs/
   at 600 dpi.
 - `opt_*.inp` and `opt_*.out` preserve the ORCA calculation inputs and logs.
 - `crest_*/crest_best.xyz` preserves the conformer passed to ORCA.
+- `run_manifest.json` records arguments, input hashes, platform, and Python
+  version for reproducibility.
 - Console logs report $G_{RR}$, $G_{RS}$, relative stability, `K_homo`, and
   `K_hetero`.
 
@@ -154,10 +163,21 @@ calc_outputs/
 - Preserve the input XYZ files, command line, solvent, temperature, functional,
   basis, dispersion model, and core count with the generated `calc_outputs/`.
 - Review ORCA convergence and frequency results before accepting a free energy.
-- The built-in numerical solver reports a warning and uses an approximate
-  fallback if a mass-balance point does not converge.
-- Dummy hydrogen structures are created only when requested input files are
-  missing; replace them with chemically meaningful structures for real work.
+- Real runs fail when a mass-balance point does not converge or has a large
+  residual; no approximate chemistry result is returned.
+- Dummy hydrogen structures are created only in explicit `--mock` mode when
+  input files are missing; real runs require both valid XYZ files.
+
+## Testing
+
+Run the focused regression suite with:
+
+```bash
+python -m pytest -q
+```
+
+The tests cover XYZ validation, Gibbs-energy parsing, mass-balance residuals,
+invalid input rejection, and model endpoint behavior.
 
 ## Project layout
 
@@ -165,7 +185,10 @@ calc_outputs/
 .
 |-- nle_predictor.py    # Workflow, thermodynamics, solver, export, plotting
 |-- requirements.txt    # Python runtime dependencies
+|-- requirements-dev.txt # Test and development dependencies
 |-- README.md           # Usage and reproducibility documentation
+|-- tests/
+|   `-- test_nle_predictor.py
 `-- assets/
     `-- nle-workflow.svg # Animated project visual
 ```

@@ -1,11 +1,14 @@
 import os
-import sys
 import subprocess
 import re
 import csv
+import hashlib
+import json
 import logging
 import argparse
 import shutil
+import platform
+from datetime import datetime, timezone
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import root
@@ -28,6 +31,67 @@ def setup_logger():
     return logger
 
 logger = setup_logger()
+
+
+def validate_xyz_file(xyz_path):
+    """Validate an XYZ file and return its atom count."""
+    if not os.path.isfile(xyz_path):
+        raise FileNotFoundError(f"XYZ input file not found: {xyz_path}")
+
+    with open(xyz_path, 'r') as xyz_file:
+        lines = xyz_file.readlines()
+
+    if len(lines) < 2:
+        raise ValueError(f"XYZ file is incomplete: {xyz_path}")
+
+    try:
+        atom_count = int(lines[0].strip())
+    except ValueError as error:
+        raise ValueError(f"First XYZ line must be an atom count: {xyz_path}") from error
+
+    if atom_count <= 0 or len(lines) < atom_count + 2:
+        raise ValueError(f"XYZ file does not contain {atom_count} atoms: {xyz_path}")
+
+    for line_number, line in enumerate(lines[2:atom_count + 2], start=3):
+        fields = line.split()
+        if len(fields) < 4:
+            raise ValueError(f"Invalid XYZ coordinate at {xyz_path}:{line_number}")
+        try:
+            [float(value) for value in fields[1:4]]
+        except ValueError as error:
+            raise ValueError(f"Invalid XYZ coordinate at {xyz_path}:{line_number}") from error
+
+    return atom_count
+
+
+def sha256_file(file_path):
+    """Return the SHA-256 digest for a file."""
+    digest = hashlib.sha256()
+    with open(file_path, 'rb') as input_file:
+        for chunk in iter(lambda: input_file.read(1024 * 1024), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def write_run_manifest(output_dir, args, input_files, missing_dependencies):
+    """Write machine-readable provenance for a workflow run."""
+    manifest = {
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        "arguments": vars(args),
+        "mock_mode": bool(args.mock),
+        "missing_dependencies": missing_dependencies,
+        "input_files": {
+            path: {"sha256": sha256_file(path), "size_bytes": os.path.getsize(path)}
+            for path in input_files
+        },
+    }
+    manifest_path = os.path.join(output_dir, "run_manifest.json")
+    with open(manifest_path, 'w') as manifest_file:
+        json.dump(manifest, manifest_file, indent=2)
+        manifest_file.write('\n')
+    logger.info(f"Run manifest saved to {manifest_path}")
 
 class Config:
     """Configuration and dependency management for quantum chemistry binaries."""
@@ -54,6 +118,7 @@ class ConformerSampler:
 
     def run_sampling(self, input_xyz, output_dir, solvent=None):
         """Runs CREST conformational search on a given XYZ file."""
+        validate_xyz_file(input_xyz)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
             
@@ -118,6 +183,7 @@ class DFTEvaluator:
 
     def generate_input(self, xyz_file, run_name, functional="B3LYP", basis="def2-SVP", dispersion="D4", solvent=None):
         """Generates an ORCA input file for geometry optimization and frequency calculations."""
+        validate_xyz_file(xyz_file)
         inp_path = f"{run_name}.inp"
         
         # Read coordinates
@@ -147,20 +213,15 @@ class DFTEvaluator:
 
     def extract_free_energy(self, out_file):
         """Parses ORCA output to extract the Final Gibbs Free Energy in Hartrees."""
-        if self.mock_mode:
-            # Return mocked energies to simulate K_eq ~ 10 for demonstration
-            if "RS" in out_file:
-                return -1000.00366 # ~ -2.3 kcal/mol more stable
-            else:
-                return -1000.00000
-                
         gibbs_energy = None
+        energy_pattern = re.compile(
+            r"Final Gibbs free energy\s+([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?)"
+        )
         with open(out_file, 'r') as f:
             for line in f:
-                if "Final Gibbs free energy" in line:
-                    match = re.search(r"[-+]?\d*\.\d+|\d+", line)
-                    if match:
-                        gibbs_energy = float(match.group())
+                match = energy_pattern.search(line)
+                if match:
+                    gibbs_energy = float(match.group(1))
         
         if gibbs_energy is None:
             logger.error(f"Could not find Gibbs free energy in {out_file}")
@@ -222,6 +283,11 @@ class NLECalculator:
         Numerically solves the mass balance equations for Monomers (M_R, M_S).
         Total Catalyst = C_R + C_S = 1.0
         """
+        if not -1.0 <= ee_cat <= 1.0:
+            raise ValueError("Catalyst ee must be between -1.0 and 1.0")
+        if k_homo < 0 or k_hetero < 0:
+            raise ValueError("Association constants must be non-negative")
+
         C_R = 0.5 * (1.0 + ee_cat)
         C_S = 0.5 * (1.0 - ee_cat)
         
@@ -239,18 +305,31 @@ class NLECalculator:
         ms_guess = (-1 + np.sqrt(1 + 8 * k_homo * C_S)) / (4 * k_homo) if C_S > 0 else 0.0
         
         sol = root(equations, [mr_guess, ms_guess], method='hybr')
-        
-        if not sol.success:
-            logger.warning(f"Solver failed to converge at ee_cat={ee_cat}. Using fallback.")
-            return mr_guess, ms_guess # Fallback to rough guess
-            
-        return sol.x[0], sol.x[1]
+
+        residual = np.max(np.abs(equations(sol.x))) if sol.success else np.inf
+        if (
+            not sol.success
+            or not np.all(np.isfinite(sol.x))
+            or np.any(sol.x < -1e-10)
+            or residual > 1e-8
+        ):
+            raise RuntimeError(
+                f"Mass-balance solve failed at ee_cat={ee_cat}: "
+                f"{sol.message}; residual={residual:.3e}"
+            )
+
+        return max(0.0, sol.x[0]), max(0.0, sol.x[1])
 
     def simulate_kagan_model(self, ee_cat_range, delta_g_kcal, k_homo_abs=1e5):
         """
         Simulates the NLE curve.
         k_homo_abs: Absolute association constant for R + R -> RR (Default 1e5 for reservoir limit)
         """
+        if self.temp <= 0:
+            raise ValueError("Temperature must be greater than zero")
+        if k_homo_abs < 0:
+            raise ValueError("k_homo_abs must be non-negative")
+
         # Calculate k_hetero relative to k_homo
         # K_RS / K_RR = 2 * exp(-DeltaG / RT)  --> factor of 2 is the symmetry number
         ratio = 2.0 * np.exp(-delta_g_kcal / (GAS_CONSTANT_R * self.temp))
@@ -362,16 +441,29 @@ def main():
     
     # 0. Check dependencies
     missing_deps = Config.check_dependencies()
-    mock_mode = args.mock or (len(missing_deps) > 0)
-    
-    if len(missing_deps) > 0 and not args.mock:
-        logger.warning(f"Missing computational binaries: {', '.join(missing_deps)}.")
-        logger.warning("Automatically falling back to MOCK MODE for demonstration.")
+    if missing_deps and not args.mock:
+        parser.error(
+            "Missing computational binaries: " + ", ".join(missing_deps) +
+            ". Install them or rerun with --mock for a synthetic demonstration."
+        )
+    mock_mode = args.mock
+
+    if args.temp <= 0:
+        parser.error("--temp must be greater than zero")
+    if args.cores <= 0:
+        parser.error("--cores must be greater than zero")
+    if args.khomo < 0:
+        parser.error("--khomo must be non-negative")
     
     # 1. Setup Inputs
     if not os.path.exists(args.rr) or not os.path.exists(args.rs):
-        logger.info("Provided input files not found. Generating dummy XYZ files for testing.")
+        if not args.mock:
+            parser.error("Both --rr and --rs must point to existing XYZ files")
+        logger.info("Mock input files not found. Generating dummy XYZ files for testing.")
         setup_dummy_files(args.rr, args.rs)
+
+    validate_xyz_file(args.rr)
+    validate_xyz_file(args.rs)
 
     os.makedirs(args.outdir, exist_ok=True)
     
@@ -423,6 +515,7 @@ def main():
         ee_prod_range,
         save_path=os.path.join(args.outdir, "nle_curve.png")
     )
+    write_run_manifest(args.outdir, args, [args.rr, args.rs], missing_deps)
     
     logger.info("="*55)
     logger.info("Workflow completed successfully!")
