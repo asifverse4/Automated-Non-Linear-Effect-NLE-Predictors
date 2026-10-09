@@ -247,6 +247,13 @@ python -m pytest -q
 The tests cover XYZ validation, Gibbs-energy parsing, mass-balance residuals,
 invalid input rejection, and model endpoint behavior.
 
+## Project Standards
+
+- [Contributing guide](CONTRIBUTING.md) for development and pull requests
+- [Code of Conduct](CODE_OF_CONDUCT.md) for community participation
+- [MIT License](LICENSE) for software use and distribution
+- [Citation guide](CITATION.md) for research and software citations
+
 ## Project layout
 
 ```text
@@ -255,6 +262,10 @@ invalid input rejection, and model endpoint behavior.
 |-- requirements.txt    # Python runtime dependencies
 |-- requirements-dev.txt # Test and development dependencies
 |-- README.md           # Usage and reproducibility documentation
+|-- CONTRIBUTING.md     # Contribution and review workflow
+|-- CODE_OF_CONDUCT.md  # Community standards
+|-- CITATION.md         # Research citation guidance
+|-- LICENSE             # MIT license
 |-- tests/
 |   `-- test_nle_predictor.py
 `-- assets/
