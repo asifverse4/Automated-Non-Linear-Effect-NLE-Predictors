@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
 
-from nle_predictor import DFTEvaluator, NLECalculator, validate_xyz_file
+from nle_predictor import (
+    DFTEvaluator,
+    NLECalculator,
+    boltzmann_weighted_free_energy,
+    validate_xyz_file,
+)
 
 
 def test_validate_xyz_file_accepts_valid_structure(tmp_path):
@@ -43,6 +48,17 @@ def test_generate_input_preserves_electronic_state(tmp_path, monkeypatch):
     content = (tmp_path / input_path).read_text()
     assert "Charge -1" in content
     assert "Mult 2" in content
+
+
+def test_boltzmann_ensemble_is_lower_than_its_lowest_member():
+    ensemble = boltzmann_weighted_free_energy([-100.0, -99.99], 298.15)
+
+    assert ensemble < -100.0
+
+
+def test_boltzmann_ensemble_rejects_invalid_temperature():
+    with pytest.raises(ValueError, match="Temperature"):
+        boltzmann_weighted_free_energy([-100.0], 0)
 
 
 def test_mass_balance_preserves_catalyst_material():

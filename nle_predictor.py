@@ -73,6 +73,21 @@ def sha256_file(file_path):
     return digest.hexdigest()
 
 
+def boltzmann_weighted_free_energy(energies_hartree, temperature):
+    """Return the ensemble free energy from conformer Gibbs energies."""
+    if temperature <= 0:
+        raise ValueError("Temperature must be greater than zero")
+    energies = np.asarray(energies_hartree, dtype=float)
+    if energies.size == 0 or not np.all(np.isfinite(energies)):
+        raise ValueError("Conformer energies must be a non-empty finite sequence")
+
+    energies_kcal = energies * HARTREE_TO_KCAL
+    minimum = np.min(energies_kcal)
+    scaled = np.exp(-(energies_kcal - minimum) / (GAS_CONSTANT_R * temperature))
+    ensemble_kcal = minimum - GAS_CONSTANT_R * temperature * np.log(np.sum(scaled))
+    return ensemble_kcal / HARTREE_TO_KCAL
+
+
 def write_run_manifest(output_dir, args, input_files, missing_dependencies):
     """Write machine-readable provenance for a workflow run."""
     manifest = {
@@ -104,6 +119,7 @@ def write_prediction_report(
     k_hetero,
     ee_cat,
     ee_prod,
+    conformer_counts,
 ):
     """Write a structured summary of the thermodynamic prediction."""
     product_at_50 = float(np.interp(0.5, ee_cat, ee_prod))
@@ -137,6 +153,7 @@ def write_prediction_report(
             "RS_hartree": g_rs,
             "RS_minus_RR_kcal_per_mol": delta_g_kcal,
         },
+        "conformers": conformer_counts,
         "association_constants": {
             "K_homo": k_homo,
             "K_hetero": k_hetero,
@@ -183,9 +200,11 @@ class ConformerSampler:
         self.cores = cores
         self.mock_mode = mock_mode
 
-    def run_sampling(self, input_xyz, output_dir, solvent=None):
+    def run_sampling(self, input_xyz, output_dir, solvent=None, max_conformers=1):
         """Runs CREST conformational search on a given XYZ file."""
         validate_xyz_file(input_xyz)
+        if max_conformers <= 0:
+            raise ValueError("max_conformers must be greater than zero")
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
             
@@ -199,9 +218,17 @@ class ConformerSampler:
         
         if self.mock_mode:
             logger.info(f"[MOCK] Simulating CREST execution for {input_xyz}")
-            with open(best_conformer_path, 'w') as f:
-                f.write(f"2\nMock Conformer {base_name}\nH 0.0 0.0 0.0\nH 0.0 0.0 0.74\n")
-            return best_conformer_path
+            conformer_paths = []
+            for index in range(1, max_conformers + 1):
+                conformer_path = os.path.join(run_dir, f"crest_conf_{index:03d}.xyz")
+                with open(conformer_path, 'w') as conformer_file:
+                    conformer_file.write(
+                        f"2\nMock Conformer {base_name} {index}\n"
+                        "H 0.0 0.0 0.0\nH 0.0 0.0 0.74\n"
+                    )
+                conformer_paths.append(conformer_path)
+            shutil.copyfile(conformer_paths[0], best_conformer_path)
+            return conformer_paths if max_conformers > 1 else best_conformer_path
 
         # Construct CREST command
         abs_input = os.path.abspath(input_xyz)
@@ -228,13 +255,28 @@ class ConformerSampler:
                 lines = conformers.readlines()
             if len(lines) < 2:
                 raise ValueError(f"Invalid CREST conformer file: {conformers_path}")
-            atom_count = int(lines[0].strip())
-            block_size = atom_count + 2
-            if len(lines) < block_size:
-                raise ValueError(f"Incomplete CREST conformer file: {conformers_path}")
-            with open(best_conformer_path, 'w') as best_conformer:
-                best_conformer.writelines(lines[:block_size])
-            return best_conformer_path
+            conformer_paths = []
+            cursor = 0
+            while cursor < len(lines) and len(conformer_paths) < max_conformers:
+                try:
+                    atom_count = int(lines[cursor].strip())
+                except ValueError as error:
+                    raise ValueError(f"Invalid conformer atom count: {conformers_path}") from error
+                block_size = atom_count + 2
+                if atom_count <= 0 or cursor + block_size > len(lines):
+                    raise ValueError(f"Incomplete CREST conformer file: {conformers_path}")
+                conformer_path = os.path.join(
+                    run_dir, f"crest_conf_{len(conformer_paths) + 1:03d}.xyz"
+                )
+                with open(conformer_path, 'w') as conformer_file:
+                    conformer_file.writelines(lines[cursor:cursor + block_size])
+                conformer_paths.append(conformer_path)
+                cursor += block_size
+
+            if not conformer_paths:
+                raise ValueError(f"No conformers found in {conformers_path}")
+            shutil.copyfile(conformer_paths[0], best_conformer_path)
+            return conformer_paths if max_conformers > 1 else best_conformer_path
         except subprocess.CalledProcessError as e:
             logger.error(f"CREST failed for {base_name}. Check {run_dir}/crest.out")
             raise
@@ -511,6 +553,7 @@ def main():
     parser.add_argument('--basis', type=str, default="def2-SVP", help="DFT Basis Set")
     parser.add_argument('--dispersion', type=str, default="D4", help="DFT Dispersion Correction")
     parser.add_argument('--cores', type=int, default=4, help="Number of CPU cores for CREST and ORCA")
+    parser.add_argument('--conformers', type=int, default=1, help="Number of low-energy conformers to evaluate per dimer")
     
     # Workflow directives
     parser.add_argument('--outdir', type=str, default="calc_outputs", help="Directory to store intermediate and final calculations")
@@ -536,6 +579,8 @@ def main():
         parser.error("--temp must be greater than zero")
     if args.cores <= 0:
         parser.error("--cores must be greater than zero")
+    if args.conformers <= 0:
+        parser.error("--conformers must be greater than zero")
     if args.khomo < 0:
         parser.error("--khomo must be non-negative")
     if args.multiplicity <= 0:
@@ -569,8 +614,9 @@ def main():
             solvent_flag,
         )
         logger.info(
-            "ORCA: %s [generated opt_RR.inp and opt_RS.inp] (%s/%s, charge=%s, multiplicity=%s)",
+            "ORCA: %s [generated inputs for %s conformer(s) per dimer] (%s/%s, charge=%s, multiplicity=%s)",
             Config.ORCA_CMD,
+            args.conformers,
             args.functional,
             args.basis,
             args.charge,
@@ -583,48 +629,52 @@ def main():
     # 2. Conformer Sampling (CREST)
     logger.info("\n--- [Step 1] Conformational Sampling ---")
     sampler = ConformerSampler(cores=args.cores, mock_mode=mock_mode)
-    best_rr = sampler.run_sampling(args.rr, output_dir=args.outdir, solvent=args.solvent)
-    best_rs = sampler.run_sampling(args.rs, output_dir=args.outdir, solvent=args.solvent)
+    sampled_rr = sampler.run_sampling(
+        args.rr,
+        output_dir=args.outdir,
+        solvent=args.solvent,
+        max_conformers=args.conformers,
+    )
+    sampled_rs = sampler.run_sampling(
+        args.rs,
+        output_dir=args.outdir,
+        solvent=args.solvent,
+        max_conformers=args.conformers,
+    )
+    rr_conformers = sampled_rr if isinstance(sampled_rr, list) else [sampled_rr]
+    rs_conformers = sampled_rs if isinstance(sampled_rs, list) else [sampled_rs]
     
     # 3. DFT Free Energy Evaluation (ORCA)
     logger.info("\n--- [Step 2] DFT Free Energy Evaluation ---")
     dft = DFTEvaluator(cores=args.cores, mock_mode=mock_mode)
     
-    # Generate inputs
-    inp_rr_name = dft.generate_input(
-        best_rr,
-        "opt_RR",
-        args.functional,
-        args.basis,
-        args.dispersion,
-        args.solvent,
-        args.charge,
-        args.multiplicity,
-    )
-    inp_rs_name = dft.generate_input(
-        best_rs,
-        "opt_RS",
-        args.functional,
-        args.basis,
-        args.dispersion,
-        args.solvent,
-        args.charge,
-        args.multiplicity,
-    )
-    
-    # Move them to working directory
-    inp_rr_path = os.path.join(args.outdir, inp_rr_name)
-    inp_rs_path = os.path.join(args.outdir, inp_rs_name)
-    shutil.move(inp_rr_name, inp_rr_path)
-    shutil.move(inp_rs_name, inp_rs_path)
-    
-    # Execute ORCA
-    out_rr = dft.run_dft(inp_rr_name, args.outdir)
-    out_rs = dft.run_dft(inp_rs_name, args.outdir)
-    
-    # Extract Data
-    g_rr = dft.extract_free_energy(out_rr)
-    g_rs = dft.extract_free_energy(out_rs)
+    rr_energies = []
+    rs_energies = []
+    for label, conformers, energies in (
+        ("RR", rr_conformers, rr_energies),
+        ("RS", rs_conformers, rs_energies),
+    ):
+        for index, conformer in enumerate(conformers, start=1):
+            run_name = f"opt_{label}_conf{index:03d}"
+            input_name = dft.generate_input(
+                conformer,
+                run_name,
+                args.functional,
+                args.basis,
+                args.dispersion,
+                args.solvent,
+                args.charge,
+                args.multiplicity,
+            )
+            input_path = os.path.join(args.outdir, input_name)
+            shutil.move(input_name, input_path)
+            output_path = dft.run_dft(input_name, args.outdir)
+            energies.append(dft.extract_free_energy(output_path))
+
+    g_rr = boltzmann_weighted_free_energy(rr_energies, args.temp)
+    g_rs = boltzmann_weighted_free_energy(rs_energies, args.temp)
+    logger.info("RR ensemble: %s conformer(s), G = %.6f Eh", len(rr_energies), g_rr)
+    logger.info("RS ensemble: %s conformer(s), G = %.6f Eh", len(rs_energies), g_rs)
     
     # 4. Thermodynamic & NLE Calculation
     logger.info("\n--- [Step 3] NLE Prediction & Visualization ---")
@@ -656,6 +706,7 @@ def main():
         nle_calc.last_k_hetero,
         ee_cat_range,
         ee_prod_range,
+        {"RR": len(rr_energies), "RS": len(rs_energies)},
     )
     write_run_manifest(args.outdir, args, [args.rr, args.rs], missing_deps)
     

@@ -1,12 +1,14 @@
-# NLE Predictor
+# NLE // ATLAS
+
+### Thermodynamic intelligence for asymmetric catalyst design
 
 <p align="center">
-  <img src="assets/nle-workflow.svg" alt="Animated three-dimensional NLE Predictor workflow" width="100%">
+  <img src="assets/nle-workflow.svg" alt="Animated three-dimensional NLE Atlas computational workflow" width="100%">
 </p>
 
 <p align="center">
-  <strong>Thermodynamic screening for asymmetric catalyst design.</strong><br>
-  A reproducible CREST, ORCA, and Kagan-model workflow for non-linear effects.
+  <strong>A research-grade computational instrument for non-linear effects.</strong><br>
+  Conformer ensembles. Free-energy surfaces. Enantioselectivity forecasts.
 </p>
 
 <p align="center">
@@ -20,12 +22,21 @@
 
 NLE Predictor is a reproducible computational screening instrument for
 asymmetric catalyst design. It compares homochiral (`R,R`) and heterochiral
-(`R,S`) catalyst dimers, estimates their relative thermodynamic stability, and
-propagates that difference through a Kagan-style mass-balance model.
+(`R,S`) catalyst dimers, evaluates low-energy conformer ensembles, estimates
+their thermodynamic stability, and propagates that difference through a
+Kagan-style mass-balance model.
 
-Each run preserves the source structures, calculation inputs and outputs,
-thermodynamic metrics, structured JSON reports, catalyst-ee/product-ee data,
-and a publication-ready plot.
+Each run preserves the source structures, conformer archive, calculation
+inputs and outputs, ensemble free energies, structured JSON reports,
+catalyst-ee/product-ee data, and a publication-ready plot.
+
+<table>
+  <tr>
+    <td><strong>ENSEMBLE ENGINE</strong><br>CREST-ranked conformers with Boltzmann-weighted Gibbs energies</td>
+    <td><strong>QUANTUM CORE</strong><br>ORCA optimization and frequency calculations</td>
+    <td><strong>SELECTIVITY MODEL</strong><br>Kagan ML2 mass balance with solver safeguards</td>
+  </tr>
+</table>
 
 ### Built for serious screening
 
@@ -103,6 +114,7 @@ python nle_predictor.py \
   --outdir calc_outputs \
   --solvent toluene \
   --cores 8 \
+  --conformers 5 \
   --charge 0 \
   --multiplicity 1
 ```
@@ -149,6 +161,7 @@ parameters before using charged or open-shell complexes.
 | `--basis` | `def2-SVP` | ORCA basis set |
 | `--dispersion` | `D4` | Dispersion correction |
 | `--cores` | `4` | CREST and ORCA parallel workers |
+| `--conformers` | `1` | Low-energy conformers evaluated per dimer |
 | `--outdir` | `calc_outputs` | Calculation and result directory |
 | `--mock` | off | Explicitly use deterministic synthetic chemistry outputs |
 | `--dry-run` | off | Validate and preview commands without running chemistry |
@@ -161,14 +174,14 @@ Every generated artifact is placed below `--outdir`:
 calc_outputs/
 |-- crest_dimer_RR.xyz/
 |   |-- crest.out
-|   `-- crest_best.xyz
+|   |-- crest_best.xyz
+|   `|-- crest_conf_001.xyz ...
 |-- crest_dimer_RS.xyz/
 |   |-- crest.out
-|   `-- crest_best.xyz
-|-- opt_RR.inp
-|-- opt_RR.out
-|-- opt_RS.inp
-|-- opt_RS.out
+|   |-- crest_best.xyz
+|   `|-- crest_conf_001.xyz ...
+|-- opt_RR_conf001.inp / .out
+|-- opt_RS_conf001.inp / .out
 |-- nle_results.csv
 |-- nle_report.json
 |-- run_manifest.json
@@ -179,6 +192,8 @@ calc_outputs/
   OriginLab, GraphPad Prism, Excel, or custom analysis.
 - `nle_report.json` summarizes the thermodynamics and classifies the result as
   positive NLE, negative NLE, or near-linear.
+- `--conformers N` preserves and evaluates up to `N` CREST conformers per
+  dimer; the reported free energies are Boltzmann-weighted ensemble values.
 - `nle_curve.png` compares the predicted NLE against the ideal linear baseline
   at 600 dpi.
 - `opt_*.inp` and `opt_*.out` preserve the ORCA calculation inputs and logs.

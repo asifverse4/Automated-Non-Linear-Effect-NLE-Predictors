@@ -1,69 +1,112 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
-  <title id="title">NLE Predictor computational workflow</title>
-  <desc id="desc">A dark, animated three-dimensional workflow from catalyst dimers through quantum chemistry to a predicted NLE curve.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 650" role="img" aria-labelledby="title desc">
+  <title id="title">NLE Atlas computational instrument</title>
+  <desc id="desc">An animated three-dimensional scientific computing interface showing molecular input, conformer ensembles, quantum energy, and NLE selectivity output.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#07111f"/>
-      <stop offset="0.55" stop-color="#10283d"/>
-      <stop offset="1" stop-color="#24152d"/>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#05080d"/>
+      <stop offset="0.48" stop-color="#0a1820"/>
+      <stop offset="1" stop-color="#17111e"/>
     </linearGradient>
-    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#6ef2df"/>
-      <stop offset="1" stop-color="#3bb7e7"/>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#10252b" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#081216" stop-opacity=".92"/>
     </linearGradient>
-    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#ffd58a"/>
-      <stop offset="1" stop-color="#f08b5b"/>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#c1ffe5"/>
+      <stop offset=".42" stop-color="#55e6c0"/>
+      <stop offset="1" stop-color="#23a6b8"/>
     </linearGradient>
-    <filter id="glowCyan"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <filter id="glowAmber"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse" patternTransform="skewY(-18)">
-      <path d="M50 0H0V50" fill="none" stroke="#71d9dc" stroke-opacity=".14" stroke-width="1"/>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff0b0"/>
+      <stop offset=".5" stop-color="#f5bd62"/>
+      <stop offset="1" stop-color="#d86c55"/>
+    </linearGradient>
+    <pattern id="floor" width="58" height="58" patternUnits="userSpaceOnUse" patternTransform="skewY(-22)">
+      <path d="M58 0H0V58" fill="none" stroke="#54d7c0" stroke-opacity=".13" stroke-width="1"/>
     </pattern>
+    <filter id="tealGlow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="goldGlow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="screen"><rect x="545" y="118" width="310" height="238" rx="8"/></clipPath>
   </defs>
-  <rect width="1200" height="520" rx="28" fill="url(#bg)"/>
-  <path d="M0 370L1200 220V520H0Z" fill="url(#grid)"/>
-  <path d="M0 370L1200 220" stroke="#7ae9df" stroke-opacity=".28"/>
-  <text x="70" y="82" fill="#f3f8f7" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="2">NLE PREDICTOR</text>
-  <text x="72" y="116" fill="#9fb9c3" font-family="Arial, sans-serif" font-size="16" letter-spacing="1">STRUCTURE  /  ENERGY  /  SELECTIVITY</text>
-  <g fill="none" stroke="#6ef2df" stroke-width="2" stroke-linecap="round" opacity=".8">
-    <path d="M228 250H335M493 250H600M758 250H865"/>
-    <path d="M330 245l10 5-10 5M595 245l10 5-10 5M860 245l10 5-10 5"/>
+
+  <rect width="1400" height="650" rx="34" fill="url(#background)"/>
+  <path d="M0 418L1400 252V650H0Z" fill="url(#floor)"/>
+  <path d="M0 418L1400 252" stroke="#73e9d0" stroke-opacity=".28"/>
+  <path d="M0 508L1400 342" stroke="#73e9d0" stroke-opacity=".09"/>
+
+  <g font-family="Arial, sans-serif">
+    <text x="72" y="82" fill="#effff8" font-size="32" font-weight="700" letter-spacing="5">NLE // ATLAS</text>
+    <text x="74" y="113" fill="#80aaa9" font-size="14" letter-spacing="3">THERMODYNAMIC INTELLIGENCE FOR CATALYST DESIGN</text>
+    <text x="1110" y="82" fill="#64e8c4" font-size="12" letter-spacing="2">SYSTEM ONLINE</text>
+    <circle cx="1088" cy="77" r="5" fill="#64e8c4" filter="url(#tealGlow)"/>
+    <text x="1110" y="104" fill="#668287" font-size="11" letter-spacing="1">ENSEMBLE MODE / ML2</text>
   </g>
-  <g font-family="Arial, sans-serif" text-anchor="middle">
-    <g transform="translate(160 250)">
-      <ellipse rx="72" ry="25" fill="#081827" stroke="#6ef2df" stroke-width="2" transform="rotate(-18)"/>
-      <ellipse rx="72" ry="25" fill="none" stroke="#6ef2df" stroke-width="2" transform="rotate(42)"/>
-      <circle r="25" fill="url(#cyan)" filter="url(#glowCyan)"/>
-      <circle cx="-38" cy="-18" r="10" fill="#f3f8f7"/><circle cx="38" cy="18" r="10" fill="#f3f8f7"/>
-      <text y="92" fill="#f3f8f7" font-size="17" font-weight="700">DIMER INPUT</text>
-      <text y="116" fill="#9fb9c3" font-size="13">R,R  +  R,S  XYZ</text>
-    </g>
-    <g transform="translate(425 250)">
-      <g fill="none" stroke="#ffd58a" stroke-width="2" opacity=".9">
-        <ellipse rx="67" ry="23" transform="rotate(-24)"><animateTransform attributeName="transform" type="rotate" from="-24" to="336" dur="7s" repeatCount="indefinite"/></ellipse>
-        <ellipse rx="67" ry="23" transform="rotate(56)"><animateTransform attributeName="transform" type="rotate" from="56" to="-304" dur="9s" repeatCount="indefinite"/></ellipse>
-      </g>
-      <circle r="27" fill="url(#amber)" filter="url(#glowAmber)"/>
-      <circle cx="-33" cy="-16" r="9" fill="#fff6df"/><circle cx="33" cy="16" r="9" fill="#fff6df"/>
-      <text y="92" fill="#f3f8f7" font-size="17" font-weight="700">CONFORMERS</text>
-      <text y="116" fill="#9fb9c3" font-size="13">CREST / xTB</text>
-    </g>
-    <g transform="translate(690 250)">
-      <path d="M-63 -42H55L68 -28V42H-63Z" fill="#0d2030" stroke="#6ef2df" stroke-width="2"/>
-      <path d="M55 -42V-28H68" fill="none" stroke="#6ef2df" stroke-width="2"/>
-      <path d="M-38 -12H38M-38 5H22M-38 22H32" stroke="#6ef2df" stroke-width="4" stroke-linecap="round" opacity=".75"/>
-      <circle cx="-45" cy="-12" r="4" fill="#ffd58a"/>
-      <text y="92" fill="#f3f8f7" font-size="17" font-weight="700">FREE ENERGY</text>
-      <text y="116" fill="#9fb9c3" font-size="13">ORCA / DFT / GIBBS</text>
-    </g>
-    <g transform="translate(955 250)">
-      <path d="M-70 45V-42M-70 45H72" stroke="#9fb9c3" stroke-width="2"/>
-      <path d="M-60 30C-20 18-30 -5 2 -10C30 -15 22 -47 67 -38" fill="none" stroke="#6ef2df" stroke-width="4" filter="url(#glowCyan)"><animate attributeName="stroke-dasharray" values="0,260;260,0" dur="3.5s" repeatCount="indefinite"/></path>
-      <path d="M-60 30L68 -38" fill="none" stroke="#ffd58a" stroke-width="2" stroke-dasharray="6 7"/>
-      <text y="92" fill="#f3f8f7" font-size="17" font-weight="700">NLE OUTPUT</text>
-      <text y="116" fill="#9fb9c3" font-size="13">KAGAN ML2 MODEL</text>
-    </g>
+
+  <g stroke="#3dd7bd" stroke-width="2" fill="none" opacity=".7">
+    <path d="M344 286H475M925 286H1054"/>
+    <path d="M465 278l15 8-15 8M1039 278l15 8-15 8"/>
   </g>
-  <text x="70" y="470" fill="#6ef2df" font-family="Arial, sans-serif" font-size="13" letter-spacing="2">THERMODYNAMIC SCREENING FOR ASYMMETRIC CATALYSIS</text>
+
+  <g transform="translate(88 188)" font-family="Arial, sans-serif">
+    <rect width="255" height="190" rx="12" fill="url(#panel)" stroke="#28575a"/>
+    <text x="22" y="35" fill="#9df5d8" font-size="12" letter-spacing="2">01 / STRUCTURE</text>
+    <text x="22" y="61" fill="#edfef7" font-size="20" font-weight="700">DIMER PAIR</text>
+    <text x="22" y="84" fill="#79999c" font-size="12">R,R  versus  R,S</text>
+    <g transform="translate(134 127)" fill="none" stroke="#6bf0cc" stroke-width="2">
+      <ellipse rx="64" ry="22" transform="rotate(-20)"/>
+      <ellipse rx="64" ry="22" transform="rotate(48)"/>
+      <circle r="21" fill="url(#teal)" filter="url(#tealGlow)"/>
+      <circle cx="-34" cy="-15" r="8" fill="#eafff5"/><circle cx="34" cy="15" r="8" fill="#eafff5"/>
+      <animateTransform attributeName="transform" type="rotate" from="0 134 127" to="360 134 127" dur="18s" repeatCount="indefinite"/>
+    </g>
+    <text x="22" y="170" fill="#4cbda8" font-size="11" letter-spacing="1">XYZ INPUT VALIDATED</text>
+  </g>
+
+  <g transform="translate(380 168)" font-family="Arial, sans-serif">
+    <rect width="145" height="236" rx="12" fill="url(#panel)" stroke="#28575a"/>
+    <text x="18" y="33" fill="#f8d98b" font-size="11" letter-spacing="2">02 / ENSEMBLE</text>
+    <text x="18" y="62" fill="#fff6d5" font-size="17" font-weight="700">CREST</text>
+    <g transform="translate(72 116)" fill="none" stroke="#f3bf69" stroke-width="2">
+      <ellipse rx="47" ry="18" transform="rotate(-27)"/>
+      <ellipse rx="47" ry="18" transform="rotate(47)"/>
+      <ellipse rx="47" ry="18" transform="rotate(91)" opacity=".65"/>
+      <circle r="15" fill="url(#gold)" filter="url(#goldGlow)"/>
+      <animateTransform attributeName="transform" type="rotate" from="0 72 116" to="360 72 116" dur="11s" repeatCount="indefinite"/>
+    </g>
+    <path d="M18 172H126M18 183H103M18 194H115" stroke="#45696b" stroke-width="3" stroke-linecap="round"/>
+    <text x="18" y="219" fill="#d8a85c" font-size="10" letter-spacing="1">BOLTZMANN WEIGHTED</text>
+  </g>
+
+  <g transform="translate(545 118)" font-family="Arial, sans-serif">
+    <rect width="310" height="238" rx="9" fill="#071117" stroke="#54e2c1" stroke-width="2"/>
+    <rect width="310" height="31" rx="9" fill="#102a2c"/>
+    <circle cx="19" cy="16" r="4" fill="#e56f64"/><circle cx="34" cy="16" r="4" fill="#e6bd67"/><circle cx="49" cy="16" r="4" fill="#5ee0b4"/>
+    <text x="72" y="21" fill="#79aaa8" font-size="10" letter-spacing="1">ENERGY SURFACE / ORCA</text>
+    <g clip-path="url(#screen)">
+      <path d="M0 190C46 155 62 178 98 133C140 80 173 139 205 91C237 43 265 75 330 26" fill="none" stroke="#4edfc0" stroke-width="3" filter="url(#tealGlow)">
+        <animate attributeName="stroke-dasharray" values="0,620;620,0" dur="4s" repeatCount="indefinite"/>
+      </path>
+      <path d="M0 200C50 168 64 190 104 145C143 101 173 151 209 102C242 58 274 92 330 43" fill="none" stroke="#eeb969" stroke-width="1.5" stroke-dasharray="5 8"/>
+      <path d="M0 204H330M0 154H330M0 104H330M0 54H330" stroke="#36716f" stroke-opacity=".25"/>
+    </g>
+    <text x="18" y="218" fill="#75a09f" font-size="10">G(R,R)</text><text x="92" y="218" fill="#75a09f" font-size="10">G(R,S)</text><text x="228" y="218" fill="#75a09f" font-size="10">DELTA G</text>
+  </g>
+
+  <g transform="translate(900 174)" font-family="Arial, sans-serif">
+    <rect width="390" height="224" rx="12" fill="url(#panel)" stroke="#28575a"/>
+    <text x="24" y="36" fill="#9df5d8" font-size="12" letter-spacing="2">03 / SELECTIVITY</text>
+    <text x="24" y="67" fill="#effff8" font-size="21" font-weight="700">NLE PROJECTION</text>
+    <path d="M32 177V88M32 177H356" stroke="#668889" stroke-width="2"/>
+    <path d="M43 166L337 98" stroke="#e9b86a" stroke-width="2" stroke-dasharray="7 8"/>
+    <path d="M43 166C102 160 112 134 166 142C212 149 211 102 255 111C287 118 291 82 344 89" fill="none" stroke="#60ebc4" stroke-width="4" filter="url(#tealGlow)">
+      <animate attributeName="stroke-dasharray" values="0,420;420,0" dur="4s" repeatCount="indefinite"/>
+    </path>
+    <text x="24" y="202" fill="#61dcb9" font-size="11" letter-spacing="1">POSITIVE NLE / 50% CATALYST EE - 97.9% PRODUCT EE</text>
+  </g>
+
+  <g font-family="Arial, sans-serif">
+    <text x="88" y="530" fill="#65e4c1" font-size="12" letter-spacing="3">SCREENING RUN  /  298.15 K  /  CONFORMERS 05</text>
+    <text x="88" y="558" fill="#729096" font-size="12">STRUCTURE -&gt; ENSEMBLE -&gt; FREE ENERGY -&gt; SELECTIVITY</text>
+    <text x="1115" y="558" fill="#729096" font-size="12" text-anchor="end">REPRODUCIBLE BY DESIGN</text>
+  </g>
 </svg>
