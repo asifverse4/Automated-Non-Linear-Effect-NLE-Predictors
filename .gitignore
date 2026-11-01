@@ -1,4 +1,60 @@
+# Python artifacts
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Coverage
 .pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Chemistry calculation outputs and scratch
 calc_outputs/
+*.tmp
+*.log
+orca_calc_*/
+crest_calc_*/
+*.densities
+*.gbw
+*.ges
+*.prop
+*.scfp
+*.engrad
+*.hess
+crest_rotamers*
+struc.xyz
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
