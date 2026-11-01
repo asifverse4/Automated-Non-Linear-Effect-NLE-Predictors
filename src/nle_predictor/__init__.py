@@ -61,6 +61,11 @@ from nle_predictor.thermo.boltzmann import (
     calculate_ensemble,
     conformational_entropy,
 )
+from nle_predictor.viz.plotting import (
+    plot_amplification_contour,
+    plot_monomer_speciation,
+    plot_nle_with_experimental,
+)
 
 __all__ = [
     # Constants
@@ -92,6 +97,10 @@ __all__ = [
     "fit_kagan_reservoir",
     "load_experimental_csv",
     "FittingResult",
+    # Visualization
+    "plot_nle_with_experimental",
+    "plot_monomer_speciation",
+    "plot_amplification_contour",
     # Models & Diagnostics
     "NLEModel",
     "NLECalculator",
