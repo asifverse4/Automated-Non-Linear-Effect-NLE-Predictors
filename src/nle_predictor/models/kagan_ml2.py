@@ -282,3 +282,4 @@ def write_sensitivity_report(
                 f"{np.max(product_ee) * 100:.4f}",
             ])
     logger.info(f"Surrogate sensitivity report saved to {report_path}")
+

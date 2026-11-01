@@ -13,3 +13,4 @@ Explain the chemical rationale or mathematical formulation behind this pull requ
 - [ ] Code formatted and linted according to project standards
 - [ ] Documentation updated (`README.md`, `docs/THEORY.md`, or docstrings)
 - [ ] Scientific derivations or references provided where applicable
+

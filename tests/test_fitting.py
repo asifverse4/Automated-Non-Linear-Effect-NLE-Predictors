@@ -59,3 +59,4 @@ def test_fit_with_intrinsic_ee_0():
     fit_res = fit_kagan_reservoir(ee_cat, ee_prod, k_homo=1e4, fit_ee_0=True)
     assert fit_res.converged
     assert fit_res.metadata["fitted_ee_0"] == pytest.approx(0.88, abs=0.03)
+

@@ -106,3 +106,4 @@ class ConformerSampler:
         except subprocess.CalledProcessError:
             logger.error(f"CREST failed for {base_name}. Check {run_dir}/crest.out")
             raise
+

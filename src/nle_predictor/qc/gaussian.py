@@ -47,3 +47,4 @@ def extract_gaussian_free_energy(log_file: str) -> float:
         raise ValueError(f"Could not find Gibbs free energy in Gaussian file: {log_file}")
 
     return gibbs_energy
+

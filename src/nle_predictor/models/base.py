@@ -40,3 +40,4 @@ class NLEModel(ABC):
             Detailed simulation result with monomers, product ee, and diagnostics.
         """
         pass
+

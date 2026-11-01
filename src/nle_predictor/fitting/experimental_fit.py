@@ -149,3 +149,4 @@ def fit_kagan_reservoir(
             "iterations": int(res.nfev),
         },
     )
+

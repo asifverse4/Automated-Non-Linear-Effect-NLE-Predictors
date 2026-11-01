@@ -149,3 +149,4 @@ class FittingResult:
     residuals: np.ndarray
     converged: bool = True
     metadata: Dict[str, Any] = field(default_factory=dict)
+

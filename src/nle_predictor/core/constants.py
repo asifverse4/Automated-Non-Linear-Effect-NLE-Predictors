@@ -69,3 +69,4 @@ def standard_state_correction_gas_to_solution(
     molar_volume_liters = IDEAL_GAS_CONSTANT_L_ATM * temp_k
     # Delta G = - delta_n * R * T * ln(V_m)
     return -float(delta_n) * GAS_CONSTANT_R * temp_k * math.log(molar_volume_liters)
+

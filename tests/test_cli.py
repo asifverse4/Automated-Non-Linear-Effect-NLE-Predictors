@@ -55,3 +55,4 @@ def test_cli_run_mock(tmp_path):
     assert os.path.isfile(outdir / "nle_results.csv")
     assert os.path.isfile(outdir / "nle_curve.png")
     assert os.path.isfile(outdir / "speciation_curve.png")
+

@@ -55,3 +55,4 @@ def test_plot_amplification_contour(tmp_path):
 
     assert os.path.isfile(out_file)
     assert os.path.getsize(out_file) > 1000
+

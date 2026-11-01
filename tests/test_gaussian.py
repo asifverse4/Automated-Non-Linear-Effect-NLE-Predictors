@@ -43,3 +43,4 @@ def test_validate_gaussian_rejects_imaginary_modes(tmp_path):
 
     with pytest.raises(RuntimeError, match="imaginary mode"):
         validate_gaussian_output(str(log_file))
+

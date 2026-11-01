@@ -68,3 +68,4 @@ def test_inflection_point_detection_on_sigmoidal():
     inflections = find_inflection_points(x, y)
     assert len(inflections) == 1
     assert inflections[0] == pytest.approx(0.5, abs=0.05)
+

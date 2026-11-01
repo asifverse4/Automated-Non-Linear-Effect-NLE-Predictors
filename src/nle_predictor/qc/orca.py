@@ -171,3 +171,4 @@ class DFTEvaluator:
         except subprocess.CalledProcessError:
             logger.error(f"ORCA calculation failed. Check {out_path}.")
             raise
+

@@ -41,3 +41,4 @@ def test_active_dimer_parameter_validation():
 
     with pytest.raises(ValueError, match="Intrinsic ee"):
         KaganActiveDimerModel(ee_0=1.5)
+

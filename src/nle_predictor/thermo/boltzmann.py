@@ -159,3 +159,4 @@ def calculate_ensemble(
         conformer_count=len(conformers),
         conformational_entropy_cal_mol_k=float(s_conf),
     )
+

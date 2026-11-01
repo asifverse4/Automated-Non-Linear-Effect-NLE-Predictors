@@ -104,3 +104,4 @@ def test_ensemble_result_dict_export():
     assert d["label"] == "RR"
     assert d["conformer_count"] == 1
     assert len(d["conformers"]) == 1
+

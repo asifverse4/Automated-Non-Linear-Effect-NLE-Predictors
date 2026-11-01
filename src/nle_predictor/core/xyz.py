@@ -203,3 +203,4 @@ def calculate_rmsd(coords_p: np.ndarray, coords_q: np.ndarray) -> float:
     # Calculate RMSD
     diff = p_centered - q_rotated
     return float(np.sqrt(np.mean(np.sum(diff * diff, axis=1))))
+
