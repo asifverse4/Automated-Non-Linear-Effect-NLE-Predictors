@@ -1,0 +1,14 @@
+# Negative Non-Linear Effect (Asymmetric Depletion)
+# Reference: Kagan Model ML2 with K_homo >> K_hetero
+ee_catalyst(%),ee_product(%)
+0.0,0.0
+10.0,3.2
+20.0,8.5
+30.0,15.2
+40.0,24.0
+50.0,35.1
+60.0,48.5
+70.0,63.2
+80.0,78.5
+90.0,91.0
+100.0,100.0

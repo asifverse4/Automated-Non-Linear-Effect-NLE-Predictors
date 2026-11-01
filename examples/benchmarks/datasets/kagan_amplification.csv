@@ -1,0 +1,16 @@
+# Historic Kagan Diethylzinc Asymmetric Amplification
+# Reference: H. B. Kagan et al., J. Am. Chem. Soc. 1986, 108, 2353-2357
+ee_catalyst(%),ee_product(%)
+0.0,0.0
+5.0,28.5
+10.0,48.0
+15.0,61.5
+20.0,71.0
+30.0,82.5
+40.0,88.5
+50.0,92.0
+60.0,94.5
+70.0,96.2
+80.0,97.8
+90.0,99.0
+100.0,100.0
