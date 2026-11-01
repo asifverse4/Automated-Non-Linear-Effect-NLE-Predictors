@@ -1,0 +1,35 @@
+name: Bug Report
+description: Report a reproducible bug or numerical error in NLE Predictor
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for helping improve NLE Predictor! Please report bugs with minimal reproducible examples.
+  - type: input
+    id: environment
+    attributes:
+      label: Operating System and Python Version
+      placeholder: e.g. Ubuntu 24.04, Python 3.11, ORCA 5.0.4, CREST 2.12
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear and concise description of the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal Reproduction Steps
+      description: Commands or Python code to reproduce the issue.
+      placeholder: |
+        nle-predictor run --rr my_rr.xyz --rs my_rs.xyz
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Terminal Output / Stack Trace
+      render: shell

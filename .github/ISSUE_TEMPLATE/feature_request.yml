@@ -1,0 +1,26 @@
+name: Feature Request
+description: Propose a new kinetic model, quantum chemistry engine, or capability
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Share your ideas for new kinetic models, DFT software integrations, or analysis tools!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Chemical / Scientific Motivation
+      description: What challenge or research problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution or API Design
+      description: Describe your proposed feature, mathematical formulation, or workflow.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Scientific Literature References
+      description: Papers, DOIs, or books describing the model or technique.
