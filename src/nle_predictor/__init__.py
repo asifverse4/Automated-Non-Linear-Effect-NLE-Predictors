@@ -29,6 +29,10 @@ from nle_predictor.core.xyz import (
     validate_xyz_file,
     write_xyz,
 )
+from nle_predictor.fitting.experimental_fit import (
+    fit_kagan_reservoir,
+    load_experimental_csv,
+)
 from nle_predictor.models.base import NLEModel
 from nle_predictor.models.diagnostics import (
     NLEDiagnostics,
@@ -84,6 +88,10 @@ __all__ = [
     "boltzmann_weights",
     "conformational_entropy",
     "calculate_ensemble",
+    # Fitting & Regression
+    "fit_kagan_reservoir",
+    "load_experimental_csv",
+    "FittingResult",
     # Models & Diagnostics
     "NLEModel",
     "NLECalculator",
