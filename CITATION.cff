@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software in research, please cite it as below."
+title: "NLE Predictor: Automated Non-Linear Effect Predictors and Thermodynamic Intelligence for Asymmetric Catalysis"
+authors:
+  - family-names: "Raza"
+    given-names: "Asif"
+    orcid: "https://orcid.org/0009-0000-0000-0000"
+version: 1.0.0
+date-released: "2026-11-01"
+license: "MIT"
+repository-code: "https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors"
+keywords:
+  - "asymmetric catalysis"
+  - "computational chemistry"
+  - "non-linear effect"
+  - "kagan model"
+  - "density functional theory"
+  - "crest"
+  - "orca"
+  - "thermodynamics"

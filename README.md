@@ -1,280 +1,259 @@
-# NLE // ATLAS
+# NLE-Predictor
 
-### Thermodynamic intelligence for asymmetric catalyst design
+### Automated Non-Linear Effect (NLE) Predictors and Thermodynamic Intelligence for Asymmetric Catalysis
 
 <p align="center">
-  <img src="assets/nle-workflow.svg" alt="Animated three-dimensional NLE Atlas computational workflow" width="100%">
+  <img src="assets/nle-workflow.svg" alt="NLE Predictor computational workflow" width="100%">
 </p>
 
 <p align="center">
-  <strong>A research-grade computational instrument for non-linear effects.</strong><br>
-  Conformer ensembles. Free-energy surfaces. Enantioselectivity forecasts.
+  <strong>A research-grade computational instrument and modeling engine for non-linear effects in chiral catalyst design.</strong><br>
+  Conformer ensembles &bull; Free-energy surfaces &bull; Enantioselectivity forecasts &bull; Experimental data fitting
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.10 or newer">
+  <img src="https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python Versions">
+  <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License: MIT">
   <img src="https://img.shields.io/badge/CREST-xTB-176B87?style=flat-square" alt="CREST and xTB">
   <img src="https://img.shields.io/badge/ORCA-DFT-5B4B8A?style=flat-square" alt="ORCA DFT">
-  <img src="https://img.shields.io/badge/Model-Kagan%20ML2-C45A2A?style=flat-square" alt="Kagan ML2 model">
+  <img src="https://img.shields.io/badge/Gaussian-09%2F16-B02A37?style=flat-square" alt="Gaussian Support">
+  <img src="https://img.shields.io/badge/Models-Kagan%20ML2%20%2B%20Active%20Dimer-C45A2A?style=flat-square" alt="Kagan Models">
 </p>
+
+---
 
 ## Overview
 
-NLE Predictor is a reproducible computational screening instrument for
-asymmetric catalyst design. It compares homochiral (`R,R`) and heterochiral
-(`R,S`) catalyst dimers, evaluates low-energy conformer ensembles, estimates
-their thermodynamic stability, and propagates that difference through a
-Kagan-style mass-balance model.
+**NLE-Predictor** is an open-source, reproducible computational screening instrument designed to model, predict, and analyze **Non-Linear Effects (NLE)** in asymmetric synthesis and catalytic reaction design.
 
-Each run preserves the source structures, conformer archive, calculation
-inputs and outputs, ensemble free energies, structured JSON reports,
-catalyst-ee/product-ee data, and a publication-ready plot.
+The package combines:
+1. **Automated Quantum Chemistry Workflows:** CREST/xTB conformational sampling, DFT geometry optimization, and vibrational frequency analysis (ORCA / Gaussian) to calculate Boltzmann-weighted Gibbs free energies for homochiral (`R,R`) and heterochiral (`R,S`) catalyst dimers.
+2. **Kagan ML2 Thermodynamic & Kinetic Engines:** Monomer-dimer equilibria solvers equipped with analytical Jacobians for instantaneous quadratic convergence across reservoir and active-dimer regimes.
+3. **Experimental Parameter Fitting:** Non-linear least-squares regression to extract $\Delta G$, $K_{\text{hetero}}/K_{\text{homo}}$, and intrinsic monomer stereoselectivity ($ee_0$) with 95% confidence intervals directly from HPLC/GC enantiopurity data pairs.
+4. **Mathematical Curve Diagnostics:** Quantifies initial slope at racemic state ($S_0$), maximum asymmetric amplification factor ($\alpha_{\text{max}}$), Area Under Asymmetry (AUA), and inflection points.
+5. **Publication-Ready Visualization:** JACS/Nature-styled plots including dual-axis experimental overlays, residual subplots, and monomer speciation curves at 600 DPI.
 
 <table>
   <tr>
-    <td><strong>ENSEMBLE ENGINE</strong><br>CREST-ranked conformers with Boltzmann-weighted Gibbs energies</td>
-    <td><strong>QUANTUM CORE</strong><br>ORCA optimization and frequency calculations</td>
-    <td><strong>SELECTIVITY MODEL</strong><br>Kagan ML2 mass balance with solver safeguards</td>
+    <td align="center"><strong>CONFORMER ENGINE</strong><br>CREST / xTB conformational sampling & Boltzmann weighting</td>
+    <td align="center"><strong>QUANTUM CORE</strong><br>ORCA and Gaussian DFT frequency & free energy evaluation</td>
+    <td align="center"><strong>KINETIC SOLVER</strong><br>Kagan ML2 Reservoir & Active Dimer models with analytical Jacobian</td>
+    <td align="center"><strong>DATA REGRESSION</strong><br>Non-linear curve fitting for experimental $(ee_{\text{cat}}, ee_{\text{prod}})$ data</td>
   </tr>
 </table>
 
-### Built for serious screening
+---
 
-- **Explicit execution modes:** real runs never silently become mock runs;
-  `--dry-run` previews the calculation plan without executing chemistry.
-- **Electronic-state control:** configure molecular charge and spin
-  multiplicity for ORCA input generation.
-- **Numerical safeguards:** validate XYZ structures, reject invalid
-  concentrations, and enforce mass-balance residual tolerances.
-- **Quantum-chemistry validation:** accept Gibbs energies only from ORCA jobs
-  that terminate normally and report zero imaginary frequencies.
-- **Machine-readable results:** `nle_report.json` records free energies,
-  association constants, NLE classification, 50% catalyst performance, and
-  amplification metrics.
-- **Sensitivity analysis:** `--sensitivity` perturbs free energy, temperature,
-  and `K_homo` to expose model dependence in a transparent CSV table.
-- **Audit trail:** `run_manifest.json` records arguments, input hashes, Python
-  version, platform, and timestamp.
+## Chemical & Mathematical Foundation
 
-## Workflow
-
-```mermaid
-flowchart LR
-    A[RR and RS XYZ structures] --> B[CREST / xTB<br/>conformer sampling]
-    B --> C[Lowest-energy<br/>conformers]
-    C --> D[ORCA optimization<br/>and frequencies]
-    D --> E[Gibbs free energies]
-    E --> F[K_homo and K_hetero]
-    F --> G[Kagan ML2<br/>mass balance]
-    G --> H[CSV data and<br/>NLE curve]
-```
-
-### What is calculated
-
-For each catalyst ee value, the model solves the coupled monomer balances
+In asymmetric catalysis, the enantiomeric excess of the product ($ee_{\text{prod}}$) often deviates dramatically from the catalyst enantiomeric excess ($ee_{\text{cat}}$) due to aggregation phenomena:
 
 $$
-C_R = M_R + 2K_{homo}M_R^2 + K_{hetero}M_RM_S
+C_R = M_R + 2 K_{\text{homo}} M_R^2 + K_{\text{hetero}} M_R M_S
 $$
 
 $$
-C_S = M_S + 2K_{homo}M_S^2 + K_{hetero}M_RM_S
+C_S = M_S + 2 K_{\text{homo}} M_S^2 + K_{\text{hetero}} M_R M_S
 $$
 
-and reports the product ee implied by the active monomer pool. The relative
-free energy is converted using the configured temperature and
-$R = 0.00198720425864083$ kcal mol$^{-1}$ K$^{-1}$.
+The relative dimerization stability $\Delta G = G_{(R,S)} - G_{(R,R)}$ determines the equilibrium association constants through statistical symmetry ($C_2$ rotational factor of 2):
 
-## Quick start
+$$
+\frac{K_{\text{hetero}}}{K_{\text{homo}}} = 2 \exp\left(-\frac{\Delta G}{R T}\right)
+$$
 
-### 1. Install Python dependencies
+- **Positive NLE ((+)NLE, Asymmetric Amplification):** $\Delta G < 0 \implies K_{\text{hetero}} \gg K_{\text{homo}}$. The heterochiral dimer sequesters the minor enantiomer into an unreactive reservoir, boosting product optical purity.
+- **Negative NLE ((-)NLE, Asymmetric Depletion):** $\Delta G > 0 \implies K_{\text{homo}} \gg K_{\text{hetero}}$. Homochiral dimers deplete the major enantiomer, reducing product optical purity.
+
+For the full theoretical derivations, analytical Jacobians, active dimer kinetics, and standard-state concentration corrections, see [docs/THEORY.md](docs/THEORY.md).
+
+---
+
+## Installation
+
+### From Source
 
 ```bash
-python -m pip install -r requirements.txt
+git clone https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors.git
+cd Automated-Non-Linear-Effect-NLE-Predictors
+python -m pip install -e .
 ```
 
-For development and testing:
+### Development & Testing Setup
 
 ```bash
-python -m pip install -r requirements-dev.txt
+python -m pip install -e ".[dev]"
+python -m pytest -v
 ```
 
-### 2. Install computational chemistry software
+---
 
-Install CREST with xTB and ORCA according to their respective documentation.
-Both executables must be available on `PATH`:
+## Command Line Interface (CLI)
 
-```bash
-crest --version
-orca
-```
+`nle-predictor` provides four specialized subcommands:
 
-### 3. Run a real calculation
+### 1. Quantum Chemistry Workflow (`run`)
+
+Executes automated conformer search (CREST), ORCA DFT evaluations, Boltzmann ensemble weighting, and NLE curve generation:
 
 ```bash
-python nle_predictor.py \
+# Real execution with CREST and ORCA
+nle-predictor run \
   --rr inputs/dimer_RR.xyz \
   --rs inputs/dimer_RS.xyz \
-  --outdir calc_outputs \
   --solvent toluene \
   --cores 8 \
   --conformers 5 \
-  --charge 0 \
-  --multiplicity 1
+  --outdir calc_outputs
+
+# Synthetic dry-run preview (no quantum chemistry execution)
+nle-predictor run --rr inputs/dimer_RR.xyz --rs inputs/dimer_RS.xyz --dry-run
+
+# Deterministic mock demonstration
+nle-predictor run --mock --outdir calc_outputs --sensitivity
 ```
 
-Preview the plan without running CREST or ORCA:
+### 2. Fast Analytical / Kinetic Simulation (`simulate`)
+
+Simulate and plot NLE trajectories instantaneously without quantum chemistry:
 
 ```bash
-python nle_predictor.py \
-  --rr inputs/dimer_RR.xyz \
-  --rs inputs/dimer_RS.xyz \
-  --dry-run
+# Simulate asymmetric amplification with Delta G = -2.0 kcal/mol
+nle-predictor simulate --delta-g -2.0 --khomo 1e5 --outdir sim_amplification
+
+# Simulate active dimer kinetics with relative rate constant g = 0.5
+nle-predictor simulate --delta-g -1.5 --g 0.5 --ee0 0.95 --outdir sim_active
 ```
 
-### 4. Run the pipeline demonstration
+Outputs include:
+- `simulated_nle.csv`: Raw $ee_{\text{cat}}$ vs $ee_{\text{prod}}$ data.
+- `simulated_curve.png`: 600 DPI publication curve.
+- `monomer_speciation.png`: Active $[M_R]$, $[M_S]$ pool speciation.
 
-The mock mode exercises file generation, parsing, numerical solving, CSV
-export, and plotting without running CREST or ORCA:
+### 3. Experimental Data Fitting (`fit`)
+
+Fit experimental enantiopurity data pairs from chiral HPLC or GC to extract experimental thermodynamic parameters ($\Delta G$, $K_{\text{hetero}}/K_{\text{homo}}$, and intrinsic $ee_0$):
 
 ```bash
-python nle_predictor.py --mock --outdir calc_outputs
+nle-predictor fit \
+  --data examples/benchmarks/datasets/kagan_amplification.csv \
+  --temp 298.15 \
+  --outdir fit_kagan
 ```
 
-Generate a surrogate sensitivity table alongside the normal outputs:
+Outputs:
+- Fitted $\Delta G$ with standard error and 95% confidence interval.
+- Fitted $K_{\text{ratio}} = K_{\text{hetero}}/K_{\text{homo}}$.
+- Coefficient of determination ($R^2$) and Root Mean Square Error (RMSE).
+- `fitted_nle_curve.png`: Dual-panel figure with experimental scatter points, fitted curve, and residual distribution.
+- `fit_summary.json`: Machine-readable provenance.
+
+### 4. Mathematical Diagnostics (`diagnostics`)
+
+Calculate initial slope $S_0$, maximum amplification factor $\alpha_{\text{max}}$, Area Under Asymmetry (AUA), and curvature inflection points:
 
 ```bash
-python nle_predictor.py \
-  --rr inputs/dimer_RR.xyz \
-  --rs inputs/dimer_RS.xyz \
-  --outdir calc_outputs \
-  --sensitivity
+nle-predictor diagnostics --data examples/benchmarks/datasets/kagan_amplification.csv
 ```
 
-Sensitivity values are model perturbations, not experimental confidence
-intervals. They are intended to show how strongly the predicted NLE depends on
-the assumed thermodynamic inputs.
+---
 
-Mock energies are synthetic and must not be interpreted as chemical results.
-Mock mode must be requested explicitly; a real run stops if CREST or ORCA is
-not available.
+## Python API Usage
 
-## Inputs
+`nle-predictor` can be imported directly into Python scripts, workflows, or Jupyter notebooks:
 
-The `--rr` and `--rs` arguments accept XYZ files containing the homochiral and
-heterochiral catalyst dimers. The generated ORCA input currently assumes a
-neutral, singlet system (`Charge 0`, `Mult 1`); edit the input-generation
-parameters before using charged or open-shell complexes.
+```python
+import numpy as np
+from nle_predictor import (
+    NLECalculator,
+    KaganActiveDimerModel,
+    fit_kagan_reservoir,
+    analyze_nle_diagnostics,
+    plot_nle_with_experimental,
+)
 
-| Option | Default | Purpose |
-| --- | --- | --- |
-| `--rr` | `inputs/dimer_RR.xyz` | Homochiral dimer structure |
-| `--rs` | `inputs/dimer_RS.xyz` | Heterochiral dimer structure |
-| `--temp` | `298.15` | Temperature in kelvin |
-| `--solvent` | none | CREST solvent and ORCA CPCM solvent |
-| `--khomo` | `1e5` | Absolute homochiral association constant |
-| `--charge` | `0` | Molecular charge passed to ORCA |
-| `--multiplicity` | `1` | Spin multiplicity passed to ORCA |
-| `--functional` | `B3LYP` | ORCA density functional |
-| `--basis` | `def2-SVP` | ORCA basis set |
-| `--dispersion` | `D4` | Dispersion correction |
-| `--cores` | `4` | CREST and ORCA parallel workers |
-| `--conformers` | `1` | Low-energy conformers evaluated per dimer |
-| `--outdir` | `calc_outputs` | Calculation and result directory |
-| `--mock` | off | Explicitly use deterministic synthetic chemistry outputs |
-| `--dry-run` | off | Validate and preview commands without running chemistry |
-| `--sensitivity` | off | Write surrogate model sensitivity scenarios |
+# 1. Simulate Kagan ML2 Reservoir Model
+calc = NLECalculator(temp=298.15)
+cat_ee = np.linspace(0.0, 1.0, 101)
+result = calc.simulate(cat_ee, delta_g_kcal=-1.8, k_homo=1e5)
 
-## Outputs
+print(f"Classification: {result.classification}")
+print(f"Product ee at 50% catalyst ee: {result.product_at_50 * 100:.2f}%")
 
-Every generated artifact is placed below `--outdir`:
+# 2. Extract Mathematical Diagnostics
+diag = analyze_nle_diagnostics(result.ee_catalyst, result.ee_product)
+print(f"Initial Slope S_0: {diag.initial_slope:.3f}")
+print(f"Max Amplification: {diag.max_amplification:.3f}x")
+
+# 3. Fit Experimental Data
+exp_cat = np.array([0.05, 0.15, 0.30, 0.50, 0.70, 0.90])
+exp_prod = np.array([0.28, 0.61, 0.82, 0.92, 0.96, 0.99])
+fit_res = fit_kagan_reservoir(exp_cat, exp_prod)
+print(f"Fitted Delta G: {fit_res.delta_g_kcal:.3f} ± {fit_res.delta_g_stderr:.3f} kcal/mol")
+print(f"R^2: {fit_res.r_squared:.4f}")
+
+# 4. Generate Publication Plot
+plot_nle_with_experimental(result, exp_cat=exp_cat, exp_prod=exp_prod, save_path="nle_paper_fig.png")
+```
+
+---
+
+## Benchmark Chemical Systems
+
+The repository includes curated chemical geometries and historic literature datasets in `examples/benchmarks/`:
+
+- **Structures (`examples/benchmarks/structures/`):**
+  - `dimer_RR.xyz`: $C_2$-symmetric homochiral bis-(aminoalcoholate)-di-zinc catalyst complex.
+  - `dimer_RS.xyz`: $C_i$-symmetric heterochiral meso dimer complex.
+- **Literature Datasets (`examples/benchmarks/datasets/`):**
+  - `kagan_amplification.csv`: Historic Kagan diethylzinc addition showing profound (+)NLE.
+  - `blackmond_aldol.csv`: Blackmond proline-catalyzed asymmetric aldol reaction.
+  - `negative_depletion.csv`: Representative dataset displaying asymmetric depletion ((-)NLE).
+
+---
+
+## Project Structure
 
 ```text
-calc_outputs/
-|-- crest_dimer_RR.xyz/
-|   |-- crest.out
-|   |-- crest_best.xyz
-|   `|-- crest_conf_001.xyz ...
-|-- crest_dimer_RS.xyz/
-|   |-- crest.out
-|   |-- crest_best.xyz
-|   `|-- crest_conf_001.xyz ...
-|-- opt_RR_conf001.inp / .out
-|-- opt_RS_conf001.inp / .out
-|-- nle_results.csv
-|-- nle_report.json
-|-- nle_sensitivity.csv  (optional)
-|-- run_manifest.json
-`-- nle_curve.png
+Automated-Non-Linear-Effect-NLE-Predictors/
+|-- src/
+|   `-- nle_predictor/
+|       |-- core/             # Physical constants, CODATA, types, XYZ Kabsch RMSD
+|       |-- thermo/           # Boltzmann weighting, partition functions, entropy
+|       |-- models/           # Kagan ML2 Reservoir, Active Dimer, diagnostics
+|       |-- fitting/          # Non-linear regression and parameter estimation
+|       |-- qc/               # CREST, ORCA, and Gaussian parsers & runners
+|       |-- viz/              # JACS-quality visualization, speciation, contour maps
+|       `-- cli.py            # Unified command-line interface
+|-- examples/
+|   `-- benchmarks/           # Chemical dimer XYZ structures and experimental CSVs
+|-- tests/                    # Comprehensive unit and integration test suite (28+ tests)
+|-- docs/
+|   `-- THEORY.md             # Complete theoretical derivations and mathematical proofs
+|-- pyproject.toml            # PEP 517/621 packaging metadata
+|-- CITATION.cff              # Machine-readable Citation File Format
+|-- CITATION.md               # Research citation instructions
+|-- README.md                 # Project documentation
+`-- LICENSE                   # MIT License
 ```
 
-- `nle_results.csv` contains catalyst ee (%) and product ee (%), ready for
-  OriginLab, GraphPad Prism, Excel, or custom analysis.
-- `nle_report.json` summarizes the thermodynamics and classifies the result as
-  positive NLE, negative NLE, or near-linear.
-- `--conformers N` preserves and evaluates up to `N` CREST conformers per
-  dimer; the reported free energies are Boltzmann-weighted ensemble values.
-- `nle_curve.png` compares the predicted NLE against the ideal linear baseline
-  at 600 dpi.
-- `opt_*.inp` and `opt_*.out` preserve the ORCA calculation inputs and logs.
-- `crest_*/crest_best.xyz` preserves the conformer passed to ORCA.
-- `run_manifest.json` records arguments, input hashes, platform, and Python
-  version, plus detected CREST and ORCA versions for reproducibility.
-- Console logs report $G_{RR}$, $G_{RS}$, relative stability, `K_homo`, and
-  `K_hetero`.
+---
 
-## Reproducibility notes
+## Citation & Standards
 
-- Record the exact CREST/xTB and ORCA versions used for publication work.
-- Preserve the input XYZ files, command line, solvent, temperature, functional,
-  basis, dispersion model, and core count with the generated `calc_outputs/`.
-- Review ORCA convergence and frequency results before accepting a free energy.
-- ORCA outputs must contain normal termination, a final Gibbs free energy, and
-  zero imaginary frequencies; incomplete jobs are rejected.
-- Real runs fail when a mass-balance point does not converge or has a large
-  residual; no approximate chemistry result is returned.
-- Dummy hydrogen structures are created only in explicit `--mock` mode when
-  input files are missing; real runs require both valid XYZ files.
+If this software contributes to published research, please cite:
 
-## Testing
-
-Run the focused regression suite with:
-
-```bash
-python -m pytest -q
+```bibtex
+@software{raza_nle_predictor_2026,
+  author    = {Raza, Asif},
+  title     = {{NLE Predictor: Automated Non-Linear Effect Predictors and Thermodynamic Intelligence for Asymmetric Catalysis}},
+  year      = {2026},
+  version   = {1.0.0},
+  url       = {https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors}
+}
 ```
 
-The tests cover XYZ validation, Gibbs-energy parsing, mass-balance residuals,
-invalid input rejection, and model endpoint behavior.
-
-## Project Standards
-
-- [Contributing guide](CONTRIBUTING.md) for development and pull requests
-- [Code of Conduct](CODE_OF_CONDUCT.md) for community participation
-- [MIT License](LICENSE) for software use and distribution
-- [Citation guide](CITATION.md) for research and software citations
-
-## Project layout
-
-```text
-.
-|-- nle_predictor.py    # Workflow, thermodynamics, solver, export, plotting
-|-- requirements.txt    # Python runtime dependencies
-|-- requirements-dev.txt # Test and development dependencies
-|-- README.md           # Usage and reproducibility documentation
-|-- CONTRIBUTING.md     # Contribution and review workflow
-|-- CODE_OF_CONDUCT.md  # Community standards
-|-- CITATION.md         # Research citation guidance
-|-- LICENSE             # MIT license
-|-- tests/
-|   `-- test_nle_predictor.py
-`-- assets/
-    `-- nle-workflow.svg # Animated project visual
-```
-
-## Scope
-
-This project is a workflow scaffold for computational screening. It does not
-replace chemical validation, conformer quality assessment, ORCA convergence
-review, or experimental measurement. Treat predicted NLE curves as hypotheses
-to prioritize, not as standalone evidence of catalytic performance.
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Theoretical Manual](docs/THEORY.md)
+- [MIT License](LICENSE)
