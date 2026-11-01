@@ -5,6 +5,7 @@ Reference: H. B. Kagan et al., J. Am. Chem. Soc. 1989, 111, 4826-4833.
 
 import logging
 from typing import Optional, Sequence, Tuple
+
 import numpy as np
 
 from nle_predictor.core.constants import DEFAULT_TEMP, GAS_CONSTANT_R

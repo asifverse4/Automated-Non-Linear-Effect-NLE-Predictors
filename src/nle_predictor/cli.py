@@ -10,6 +10,7 @@ import logging
 import os
 import sys
 from typing import List, Optional
+
 import numpy as np
 
 from nle_predictor.core.constants import DEFAULT_TEMP
@@ -25,7 +26,6 @@ from nle_predictor.qc.crest import ConformerSampler
 from nle_predictor.qc.orca import (
     Config,
     DFTEvaluator,
-    collect_software_versions,
 )
 from nle_predictor.thermo.boltzmann import boltzmann_weighted_free_energy
 from nle_predictor.viz.plotting import (
@@ -138,7 +138,7 @@ def execute_simulate(args: argparse.Namespace) -> None:
     # Diagnostics
     diag = analyze_nle_diagnostics(res.ee_catalyst, res.ee_product)
 
-    print(f"\n--- NLE Simulation Summary ---")
+    print("\n--- NLE Simulation Summary ---")
     print(f"Model: {res.model_name}")
     print(f"Classification: {res.classification}")
     print(f"Initial Slope at Racemic: {diag.initial_slope:.3f}")
@@ -256,7 +256,6 @@ def main(argv: Optional[List[str]] = None) -> None:
         if hasattr(nle_predictor, "main"):
             # run legacy main
             pass
-        from nle_predictor.models.kagan_ml2 import write_sensitivity_report
         # Execute workflow
         _execute_qc_workflow(args)
 
@@ -264,7 +263,6 @@ def main(argv: Optional[List[str]] = None) -> None:
 def _execute_qc_workflow(args: argparse.Namespace) -> None:
     """Core QC workflow orchestrator."""
     import shutil
-    from datetime import datetime, timezone
 
     logger.info("=" * 55)
     logger.info(" Automated Non-Linear Effect (NLE) Predictor")

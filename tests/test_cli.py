@@ -1,7 +1,6 @@
 """Tests for the unified NLE-Predictor CLI interface in nle_predictor.cli."""
 
 import os
-import pytest
 
 from nle_predictor.cli import main
 

@@ -2,9 +2,10 @@
 Molecular structure manipulation, XYZ file I/O, validation, and geometry analysis.
 """
 
-from collections import Counter
 import os
-from typing import List, Tuple
+from collections import Counter
+from typing import List
+
 import numpy as np
 
 from nle_predictor.core.constants import ATOMIC_WEIGHTS
@@ -69,7 +70,7 @@ def _build_hill_formula(atom_counts: Counter) -> str:
         parts.append(f"C{atom_counts['C'] if atom_counts['C'] > 1 else ''}")
         if "H" in atom_counts:
             parts.append(f"H{atom_counts['H'] if atom_counts['H'] > 1 else ''}")
-    
+
     other_elements = sorted(
         [el for el in atom_counts if (el != "C" and (el != "H" or "C" not in atom_counts))]
     )
@@ -153,7 +154,7 @@ def write_xyz(
     with open(xyz_path, "w", encoding="utf-8") as f:
         f.write(f"{len(atoms)}\n")
         f.write(f"{comment}\n")
-        for atom, (x, y, z) in zip(atoms, coordinates):
+        for atom, (x, y, z) in zip(atoms, coordinates, strict=True):
             f.write(f"{atom:<3} {x:14.8f} {y:14.8f} {z:14.8f}\n")
 
 
@@ -203,4 +204,3 @@ def calculate_rmsd(coords_p: np.ndarray, coords_q: np.ndarray) -> float:
     # Calculate RMSD
     diff = p_centered - q_rotated
     return float(np.sqrt(np.mean(np.sum(diff * diff, axis=1))))
-

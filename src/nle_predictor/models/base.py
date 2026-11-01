@@ -3,8 +3,7 @@ Abstract base class and interface for Non-Linear Effect (NLE) mathematical model
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence
-import numpy as np
+from typing import Sequence
 
 from nle_predictor.core.types import NLESimulationResult
 

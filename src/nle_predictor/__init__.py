@@ -73,6 +73,7 @@ from nle_predictor.viz.plotting import (
 )
 
 __all__ = [
+    "cli_main",
     # Constants
     "DEFAULT_TEMP",
     "GAS_CONSTANT_R",

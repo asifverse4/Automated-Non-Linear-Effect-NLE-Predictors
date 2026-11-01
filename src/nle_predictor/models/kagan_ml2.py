@@ -7,6 +7,7 @@ import csv
 import logging
 import os
 from typing import Sequence, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import root
@@ -196,7 +197,7 @@ class NLECalculator(NLEModel):
         with open(filepath, mode="w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow(["ee_catalyst(%)", "ee_product(%)"])
-            for cat, prod in zip(ee_cat * 100, ee_prod * 100):
+            for cat, prod in zip(ee_cat * 100, ee_prod * 100, strict=True):
                 writer.writerow([f"{cat:.2f}", f"{prod:.2f}"])
         logger.info(f"Data successfully exported to {filepath}")
 
@@ -282,4 +283,3 @@ def write_sensitivity_report(
                 f"{np.max(product_ee) * 100:.4f}",
             ])
     logger.info(f"Surrogate sensitivity report saved to {report_path}")
-

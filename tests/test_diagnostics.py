@@ -6,7 +6,6 @@ import pytest
 from nle_predictor.models.diagnostics import (
     analyze_nle_diagnostics,
     calculate_area_under_asymmetry,
-    calculate_curvature,
     calculate_initial_slope,
     calculate_max_amplification,
     find_inflection_points,
