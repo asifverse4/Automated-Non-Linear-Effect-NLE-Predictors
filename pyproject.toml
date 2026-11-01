@@ -67,6 +67,7 @@ include = ["nle_predictor*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src", "."]
 python_files = ["test_*.py"]
 addopts = "-v --strict-markers"
 
