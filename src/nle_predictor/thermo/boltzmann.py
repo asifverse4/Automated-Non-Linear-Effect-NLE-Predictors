@@ -2,7 +2,8 @@
 Boltzmann ensemble thermodynamic weighting and conformational entropy calculations.
 """
 
-from typing import List, Sequence, Union
+from typing import List, Sequence
+
 import numpy as np
 
 from nle_predictor.core.constants import GAS_CONSTANT_R, HARTREE_TO_KCAL
@@ -136,7 +137,9 @@ def calculate_ensemble(
 
     min_kcal = np.min(energies * HARTREE_TO_KCAL)
     conformers: List[Conformer] = []
-    for idx, (path, e_hartree, w) in enumerate(zip(conformer_paths, energies, weights), start=1):
+    for idx, (path, e_hartree, w) in enumerate(
+        zip(conformer_paths, energies, weights, strict=True), start=1
+    ):
         e_kcal = e_hartree * HARTREE_TO_KCAL
         rel_kcal = e_kcal - min_kcal
         conformers.append(
@@ -159,4 +162,3 @@ def calculate_ensemble(
         conformer_count=len(conformers),
         conformational_entropy_cal_mol_k=float(s_conf),
     )
-

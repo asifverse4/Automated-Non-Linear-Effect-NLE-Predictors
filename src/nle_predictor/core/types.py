@@ -4,7 +4,8 @@ Domain models, typed data structures, and enumeration types for NLE Predictor.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 import numpy as np
 
 

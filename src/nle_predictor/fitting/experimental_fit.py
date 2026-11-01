@@ -6,7 +6,8 @@ Extracts Delta G, K_hetero/K_homo, and intrinsic ee_0 with statistical confidenc
 import csv
 import logging
 import os
-from typing import Optional, Tuple
+from typing import Tuple
+
 import numpy as np
 from scipy.optimize import least_squares
 
@@ -30,7 +31,7 @@ def load_experimental_csv(csv_path: str) -> Tuple[np.ndarray, np.ndarray]:
     prod_list = []
     with open(csv_path, "r", encoding="utf-8", errors="replace") as f:
         reader = csv.reader(f)
-        header = next(reader, None)
+        next(reader, None)
         for row in reader:
             if not row or len(row) < 2:
                 continue
@@ -149,4 +150,3 @@ def fit_kagan_reservoir(
             "iterations": int(res.nfev),
         },
     )
-

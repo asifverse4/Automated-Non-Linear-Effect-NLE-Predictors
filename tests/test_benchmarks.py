@@ -1,7 +1,6 @@
 """Tests for benchmark chemical structures and literature datasets."""
 
 import os
-import pytest
 
 from nle_predictor.core.xyz import read_xyz, validate_xyz_file
 from nle_predictor.fitting.experimental_fit import fit_kagan_reservoir, load_experimental_csv

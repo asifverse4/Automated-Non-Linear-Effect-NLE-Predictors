@@ -1,16 +1,17 @@
-import os
-import subprocess
-import re
+import argparse
 import csv
 import hashlib
 import json
 import logging
-import argparse
-import shutil
+import os
 import platform
+import re
+import shutil
+import subprocess
 from datetime import datetime, timezone
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.optimize import root
 
 # Configuration and Thermodynamic Constants
@@ -261,13 +262,15 @@ class Config:
     """Configuration and dependency management for quantum chemistry binaries."""
     CREST_CMD = "crest"
     ORCA_CMD = "orca"
-    
+
     @classmethod
     def check_dependencies(cls):
         """Checks if required computational chemistry software is in the system PATH."""
         missing = []
-        if shutil.which(cls.CREST_CMD) is None: missing.append('CREST')
-        if shutil.which(cls.ORCA_CMD) is None: missing.append('ORCA')
+        if shutil.which(cls.CREST_CMD) is None:
+            missing.append("CREST")
+        if shutil.which(cls.ORCA_CMD) is None:
+            missing.append("ORCA")
         return missing
 
 class ConformerSampler:
@@ -287,15 +290,15 @@ class ConformerSampler:
             raise ValueError("max_conformers must be greater than zero")
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         logger.info(f"Starting conformer sampling for {input_xyz}...")
-        
+
         base_name = os.path.splitext(os.path.basename(input_xyz))[0]
         run_dir = os.path.join(output_dir, f"crest_{base_name}")
         os.makedirs(run_dir, exist_ok=True)
-        
+
         best_conformer_path = os.path.join(run_dir, "crest_best.xyz")
-        
+
         if self.mock_mode:
             logger.info(f"[MOCK] Simulating CREST execution for {input_xyz}")
             conformer_paths = []
@@ -312,12 +315,12 @@ class ConformerSampler:
 
         # Construct CREST command
         abs_input = os.path.abspath(input_xyz)
-        cmd = [self.crest_path, abs_input, f"-T", str(self.cores)]
-        
+        cmd = [self.crest_path, abs_input, "-T", str(self.cores)]
+
         if solvent:
             # CREST ALPB model
             cmd.extend(["-alpb", solvent])
-            
+
         try:
             logger.info(f"Executing: {' '.join(cmd)} in {run_dir}")
             with open(os.path.join(run_dir, "crest.out"), "w") as f_out:
@@ -357,7 +360,7 @@ class ConformerSampler:
                 raise ValueError(f"No conformers found in {conformers_path}")
             shutil.copyfile(conformer_paths[0], best_conformer_path)
             return conformer_paths if max_conformers > 1 else best_conformer_path
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             logger.error(f"CREST failed for {base_name}. Check {run_dir}/crest.out")
             raise
 
@@ -384,22 +387,22 @@ class DFTEvaluator:
         """Generates an ORCA input file for geometry optimization and frequency calculations."""
         validate_xyz_file(xyz_file)
         inp_path = f"{run_name}.inp"
-        
+
         # Read coordinates
         coords = []
         with open(xyz_file, 'r') as f:
             lines = f.readlines()
             if len(lines) > 2:
                 coords = lines[2:] # Skip atom count and comment line
-        
+
         # Construct header
         header = f"! {functional} {basis} {dispersion} Opt Freq\n"
         if solvent:
             header += f"! CPCM({solvent})\n"
-            
+
         if self.cores > 1:
             header += f"%pal nprocs {self.cores} end\n"
-            
+
         with open(inp_path, 'w') as f:
             f.write(header)
             f.write(
@@ -409,7 +412,7 @@ class DFTEvaluator:
                 if line.strip():
                     f.write(f"    {line.strip()}\n")
             f.write("  end\nend\n")
-            
+
         return inp_path
 
     def extract_free_energy(self, out_file):
@@ -424,7 +427,7 @@ class DFTEvaluator:
                 match = energy_pattern.search(line)
                 if match:
                     gibbs_energy = float(match.group(1))
-        
+
         if gibbs_energy is None:
             logger.error(f"Could not find Gibbs free energy in {out_file}")
             raise ValueError(f"Free energy extraction failed for {out_file}")
@@ -435,9 +438,9 @@ class DFTEvaluator:
         out_file = inp_file.replace('.inp', '.out')
         out_path = os.path.join(output_dir, out_file)
         inp_path = os.path.join(output_dir, inp_file)
-        
+
         logger.info(f"Running DFT evaluation: {inp_file}...")
-        
+
         if self.mock_mode:
             logger.info(f"[MOCK] Simulating ORCA execution for {inp_file}")
             os.makedirs(output_dir, exist_ok=True)
@@ -460,12 +463,12 @@ class DFTEvaluator:
 
 class NLECalculator:
     """
-    Calculates equilibrium constants and simulates NLE curves 
+    Calculates equilibrium constants and simulates NLE curves
     using a rigorous numerical solver for the ML2 (Reservoir) Kagan Model.
     """
     def __init__(self, temp=DEFAULT_TEMP):
         self.temp = temp
-        
+
     def calc_equilibrium_constant(self, g_rr, g_rs):
         """
         Calculates the thermodynamic parameters.
@@ -474,12 +477,12 @@ class NLECalculator:
         """
         delta_g_hartree = g_rs - g_rr
         delta_g_kcal = delta_g_hartree * HARTREE_TO_KCAL
-        
-        logger.info(f"--- Thermodynamic Results ---")
+
+        logger.info("--- Thermodynamic Results ---")
         logger.info(f"G(RR) = {g_rr:.6f} Eh")
         logger.info(f"G(RS) = {g_rs:.6f} Eh")
         logger.info(f"Delta G (RS - RR): {delta_g_kcal:.4f} kcal/mol")
-        
+
         return delta_g_kcal
 
     def solve_mass_balance(self, ee_cat, k_homo, k_hetero):
@@ -494,7 +497,7 @@ class NLECalculator:
 
         C_R = 0.5 * (1.0 + ee_cat)
         C_S = 0.5 * (1.0 - ee_cat)
-        
+
         def equations(vars):
             M_R, M_S = vars
             # Mass balance for R monomer
@@ -502,12 +505,12 @@ class NLECalculator:
             # Mass balance for S monomer
             eq2 = M_S + 2 * k_homo * (M_S**2) + k_hetero * M_R * M_S - C_S
             return [eq1, eq2]
-        
+
         # Initial guesses based on pure homochiral limit (ignoring heterochiral)
         # M + 2*K*M^2 - C = 0 => 2*K*M^2 + M - C = 0
         mr_guess = (-1 + np.sqrt(1 + 8 * k_homo * C_R)) / (4 * k_homo) if C_R > 0 else 0.0
         ms_guess = (-1 + np.sqrt(1 + 8 * k_homo * C_S)) / (4 * k_homo) if C_S > 0 else 0.0
-        
+
         sol = root(equations, [mr_guess, ms_guess], method='hybr')
 
         residual = np.max(np.abs(equations(sol.x))) if sol.success else np.inf
@@ -540,7 +543,7 @@ class NLECalculator:
         k_hetero_abs = k_homo_abs * ratio
         self.last_k_hetero = k_hetero_abs
         self.last_k_ratio = ratio
-        
+
         logger.info(f"Assumed K_homo (RR binding): {k_homo_abs:.2e}")
         logger.info(f"Calculated K_hetero (RS binding): {k_hetero_abs:.2e}")
         logger.info(f"K_hetero / K_homo ratio: {ratio:.4f}")
@@ -548,16 +551,16 @@ class NLECalculator:
         ee_prods = []
         for ee_cat in ee_cat_range:
             M_R, M_S = self.solve_mass_balance(ee_cat, k_homo_abs, k_hetero_abs)
-            
+
             # ee of the product is dictated by the active monomer concentrations
             total_active = M_R + M_S
             if total_active <= 1e-12:
                 ee_p = 0.0
             else:
                 ee_p = (M_R - M_S) / total_active
-                
+
             ee_prods.append(ee_p)
-            
+
         return np.array(ee_prods)
 
     def export_data(self, ee_cat, ee_prod, filepath="nle_results.csv"):
@@ -565,7 +568,7 @@ class NLECalculator:
         with open(filepath, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(["ee_catalyst(%)", "ee_product(%)"])
-            for cat, prod in zip(ee_cat * 100, ee_prod * 100):
+            for cat, prod in zip(ee_cat * 100, ee_prod * 100, strict=True):
                 writer.writerow([f"{cat:.2f}", f"{prod:.2f}"])
         logger.info(f"Data successfully exported to {filepath}")
 
@@ -573,29 +576,29 @@ class NLECalculator:
         """Generates a publication-quality plot of the NLE curve."""
         plt.style.use('default')
         fig, ax = plt.subplots(figsize=(7, 6))
-        
+
         # Ideal linear relationship
         ax.plot(ee_cat * 100, ee_cat * 100, color='gray', linestyle='--', linewidth=1.5, label='Ideal Linear Effect')
-        
+
         # Predicted NLE
         ax.plot(ee_cat * 100, ee_prod * 100, color='#004488', linestyle='-', linewidth=2.5, label='Predicted NLE (ML$_2$ Model)')
-        
+
         # Aesthetics
         ax.set_title('Predicted Non-Linear Effect', fontsize=16, fontweight='bold', pad=15)
         ax.set_xlabel('Catalyst $ee$ (%)', fontsize=14)
         ax.set_ylabel('Product $ee$ (%)', fontsize=14)
-        
+
         ax.tick_params(axis='both', which='major', labelsize=12)
         ax.grid(True, linestyle=':', alpha=0.6, color='gray')
-        
+
         ax.set_xlim(0, 100)
         ax.set_ylim(0, 100)
-        
+
         # Format axes purely square
         ax.set_aspect('equal', adjustable='box')
-        
+
         ax.legend(fontsize=12, loc='lower right', framealpha=1.0, edgecolor='black')
-        
+
         plt.tight_layout()
         plt.savefig(save_path, dpi=600, bbox_inches='tight')
         logger.info(f"Publication-ready plot saved to {save_path}")
@@ -607,7 +610,7 @@ def setup_dummy_files(rr_path, rs_path):
         if parent:
             os.makedirs(parent, exist_ok=True)
     dummy_xyz = "2\nDummy\nH 0.0 0.0 0.0\nH 0.0 0.0 0.74\n"
-    
+
     for path in [rr_path, rs_path]:
         if not os.path.exists(path):
             with open(path, 'w') as f:
@@ -619,37 +622,37 @@ def main():
         description="Automated Non-Linear Effect (NLE) Predictor for Asymmetric Catalysis",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    
+
     # Required inputs (made optional via default mock files for safety)
     parser.add_argument('--rr', type=str, default='inputs/dimer_RR.xyz', help="Path to homochiral (R,R) dimer XYZ file")
     parser.add_argument('--rs', type=str, default='inputs/dimer_RS.xyz', help="Path to heterochiral (R,S) dimer XYZ file")
-    
+
     # Chemical Parameters
     parser.add_argument('--temp', type=float, default=298.15, help="Temperature in Kelvin")
     parser.add_argument('--solvent', type=str, default=None, help="Solvent name (e.g., toluene, water) for CREST and ORCA CPCM")
     parser.add_argument('--khomo', type=float, default=1e5, help="Assumed absolute dimerization constant for RR (ML2 reservoir)")
     parser.add_argument('--charge', type=int, default=0, help="Molecular charge for ORCA (default: 0)")
     parser.add_argument('--multiplicity', type=int, default=1, help="Spin multiplicity for ORCA (default: 1)")
-    
+
     # Computational Details
     parser.add_argument('--functional', type=str, default="B3LYP", help="DFT Functional")
     parser.add_argument('--basis', type=str, default="def2-SVP", help="DFT Basis Set")
     parser.add_argument('--dispersion', type=str, default="D4", help="DFT Dispersion Correction")
     parser.add_argument('--cores', type=int, default=4, help="Number of CPU cores for CREST and ORCA")
     parser.add_argument('--conformers', type=int, default=1, help="Number of low-energy conformers to evaluate per dimer")
-    
+
     # Workflow directives
     parser.add_argument('--outdir', type=str, default="calc_outputs", help="Directory to store intermediate and final calculations")
     parser.add_argument('--mock', action='store_true', help="Force mock execution (skip actual CREST/ORCA runs)")
     parser.add_argument('--dry-run', action='store_true', help="Validate inputs and print the planned commands without running chemistry")
     parser.add_argument('--sensitivity', action='store_true', help="Write surrogate sensitivity analysis for model parameters")
-    
+
     args = parser.parse_args()
 
     logger.info("="*55)
     logger.info(" Automated Non-Linear Effect (NLE) Predictor")
     logger.info("="*55)
-    
+
     # 0. Check dependencies
     missing_deps = Config.check_dependencies()
     if missing_deps and not args.mock and not args.dry_run:
@@ -671,7 +674,7 @@ def main():
         parser.error("--khomo must be non-negative")
     if args.multiplicity <= 0:
         parser.error("--multiplicity must be greater than zero")
-    
+
     # 1. Setup Inputs
     if not os.path.exists(args.rr) or not os.path.exists(args.rs):
         if not args.mock:
@@ -711,7 +714,7 @@ def main():
         return
 
     os.makedirs(args.outdir, exist_ok=True)
-    
+
     # 2. Conformer Sampling (CREST)
     logger.info("\n--- [Step 1] Conformational Sampling ---")
     sampler = ConformerSampler(cores=args.cores, mock_mode=mock_mode)
@@ -729,11 +732,11 @@ def main():
     )
     rr_conformers = sampled_rr if isinstance(sampled_rr, list) else [sampled_rr]
     rs_conformers = sampled_rs if isinstance(sampled_rs, list) else [sampled_rs]
-    
+
     # 3. DFT Free Energy Evaluation (ORCA)
     logger.info("\n--- [Step 2] DFT Free Energy Evaluation ---")
     dft = DFTEvaluator(cores=args.cores, mock_mode=mock_mode)
-    
+
     rr_energies = []
     rs_energies = []
     for label, conformers, energies in (
@@ -761,16 +764,16 @@ def main():
     g_rs = boltzmann_weighted_free_energy(rs_energies, args.temp)
     logger.info("RR ensemble: %s conformer(s), G = %.6f Eh", len(rr_energies), g_rr)
     logger.info("RS ensemble: %s conformer(s), G = %.6f Eh", len(rs_energies), g_rs)
-    
+
     # 4. Thermodynamic & NLE Calculation
     logger.info("\n--- [Step 3] NLE Prediction & Visualization ---")
     nle_calc = NLECalculator(temp=args.temp)
     delta_g = nle_calc.calc_equilibrium_constant(g_rr, g_rs)
-    
+
     # Simulate data points (0% to 100% ee)
     ee_cat_range = np.linspace(0, 1.0, 101)
     ee_prod_range = nle_calc.simulate_kagan_model(ee_cat_range, delta_g, k_homo_abs=args.khomo)
-    
+
     # 5. Export and Plot
     nle_calc.export_data(
         ee_cat_range,
@@ -809,7 +812,7 @@ def main():
         missing_deps,
         collect_software_versions(),
     )
-    
+
     logger.info("="*55)
     logger.info("Workflow completed successfully!")
     logger.info("="*55)

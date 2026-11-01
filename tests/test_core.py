@@ -5,20 +5,16 @@ import pytest
 
 from nle_predictor.core.constants import (
     DEFAULT_TEMP,
-    GAS_CONSTANT_R,
-    HARTREE_TO_KCAL,
     standard_state_correction_gas_to_solution,
 )
 from nle_predictor.core.types import (
     Conformer,
     EnsembleResult,
-    ModelType,
     XYZStructure,
 )
 from nle_predictor.core.xyz import (
     calculate_rmsd,
     read_xyz,
-    validate_xyz_file,
     write_xyz,
 )
 

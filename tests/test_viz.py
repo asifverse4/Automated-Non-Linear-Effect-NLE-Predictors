@@ -1,8 +1,8 @@
 """Tests for publication visualization in nle_predictor.viz.plotting."""
 
 import os
+
 import numpy as np
-import pytest
 
 from nle_predictor.models.kagan_ml2 import NLECalculator
 from nle_predictor.viz.plotting import (
