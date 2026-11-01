@@ -6,6 +6,7 @@ and Thermodynamic Intelligence for Asymmetric Catalysis.
 __version__ = "1.0.0"
 __author__ = "Asif Raza"
 
+from nle_predictor.cli import main as cli_main
 from nle_predictor.core.constants import (
     DEFAULT_TEMP,
     GAS_CONSTANT_R,
