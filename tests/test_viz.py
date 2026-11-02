@@ -1,10 +1,11 @@
-"""Tests for publication visualization in nle_predictor.viz.plotting."""
+"""Tests for publication visualization in nle_predictor.viz."""
 
 import os
 
 import numpy as np
 
 from nle_predictor.models.kagan_ml2 import NLECalculator
+from nle_predictor.viz.dashboard import generate_interactive_html
 from nle_predictor.viz.plotting import (
     plot_amplification_contour,
     plot_monomer_speciation,
@@ -56,3 +57,16 @@ def test_plot_amplification_contour(tmp_path):
     assert os.path.isfile(out_file)
     assert os.path.getsize(out_file) > 1000
 
+
+def test_generate_interactive_html_dashboard(tmp_path):
+    out_html = tmp_path / "dashboard.html"
+    result_path = generate_interactive_html(str(out_html))
+
+    assert os.path.isfile(result_path)
+    assert os.path.getsize(result_path) > 5000
+    with open(result_path, "r", encoding="utf-8") as f:
+        html = f.read()
+    assert "NLE-Predictor: Interactive Chemistry Dashboard" in html
+    assert "solveMassBalance" in html
+    assert "Kagan 1986" in html
+    assert "Noyori DAIB" in html

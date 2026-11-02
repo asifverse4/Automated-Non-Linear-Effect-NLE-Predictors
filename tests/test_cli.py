@@ -73,3 +73,12 @@ def test_pyinstaller_spec_configuration():
     assert "nle-predictor" in content
 
 
+def test_cli_dashboard(tmp_path):
+    dash_out = tmp_path / "custom_dash.html"
+    main(["dashboard", "--output", str(dash_out)])
+
+    assert os.path.isfile(dash_out)
+    assert os.path.getsize(dash_out) > 5000
+
+
+

@@ -47,6 +47,7 @@ def test_manuscript_sources_and_submission_bundle(tmp_path):
         "references.bib",
         "SUPPLEMENTARY_INFORMATION.md",
         "supplementary_information.tex",
+        "interactive_dashboard.html",
     ]:
         path = os.path.join(manuscript_dir, filename)
         assert os.path.isfile(path), f"Missing {filename}"
@@ -68,6 +69,7 @@ def test_manuscript_sources_and_submission_bundle(tmp_path):
         names = z.namelist()
         assert "manuscript.tex" in names
         assert "manuscript_generic.tex" in names
+        assert "interactive_dashboard.html" in names
         assert "references.bib" in names
         assert any("figure_1_kagan_models" in n for n in names)
 
