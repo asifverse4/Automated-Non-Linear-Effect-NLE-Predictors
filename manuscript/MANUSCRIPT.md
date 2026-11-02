@@ -1,8 +1,8 @@
 # Automated Non-Linear Effect (NLE) Predictors: A Rigorous Thermodynamic and Kinetic Modeling Framework for Asymmetric Catalyst Screening
 
 **Asif Raza**  
-*Department of Chemistry and Computational Science Initiative*  
-*Correspondence: asifraza@example.com*
+*Department of Chemistry, Jamia Hamdard*  
+*Correspondence: asifrazakne2005@gmail.com*
 
 ---
 
