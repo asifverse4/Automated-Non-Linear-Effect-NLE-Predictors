@@ -27,6 +27,7 @@ wheels/
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+manuscript/*.zip
 
 # Chemistry calculation outputs and scratch
 calc_outputs/
