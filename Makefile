@@ -7,7 +7,7 @@ help:
 	@echo "================================================="
 	@echo "make install      : Install package in editable mode"
 	@echo "make dev-install  : Install package with all development dependencies"
-	@echo "make test         : Run complete 52-test suite with pytest"
+	@echo "make test         : Run complete test suite with pytest"
 	@echo "make lint         : Run Ruff code quality and style checks"
 	@echo "make format       : Format Python code using Ruff"
 	@echo "make figures      : Generate all 600 DPI manuscript publication figures"
