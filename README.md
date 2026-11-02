@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/Gaussian-09%2F16-B02A37?style=flat-square" alt="Gaussian Support">
   <img src="https://img.shields.io/badge/Models-Kagan%20ML2%20%2B%20Active%20Dimer-C45A2A?style=flat-square" alt="Kagan Models">
   <a href="https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors/releases"><img src="https://img.shields.io/badge/release-v1.0.0-blue.svg?style=flat-square" alt="Release v1.0.0"></a>
+  <a href="docs/ZENODO_INTEGRATION.md"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo-blue.svg?style=flat-square" alt="DOI: Zenodo Archive"></a>
 </p>
 
 ---
