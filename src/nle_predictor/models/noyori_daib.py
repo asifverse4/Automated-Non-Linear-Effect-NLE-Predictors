@@ -6,7 +6,8 @@ References:
 """
 
 import logging
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence
+
 import numpy as np
 
 from nle_predictor.core.constants import DEFAULT_TEMP, GAS_CONSTANT_R

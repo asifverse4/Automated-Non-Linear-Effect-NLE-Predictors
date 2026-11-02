@@ -5,6 +5,7 @@ Converts gas-phase quantum chemistry free energies (1 atm) to solution-phase sta
 
 import math
 from typing import Dict, NamedTuple, Optional
+
 from nle_predictor.core.constants import DEFAULT_TEMP, GAS_CONSTANT_R, IDEAL_GAS_CONSTANT_L_ATM
 
 

@@ -3,6 +3,7 @@ Entrypoint module for running nle_predictor directly via `python -m nle_predicto
 """
 
 import sys
+
 from nle_predictor.cli import main
 
 if __name__ == "__main__":
