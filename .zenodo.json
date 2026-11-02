@@ -1,0 +1,33 @@
+{
+  "title": "NLE-Predictor: Automated Non-Linear Effect Predictors and Thermodynamic Intelligence for Asymmetric Catalysis",
+  "description": "<p><b>NLE-Predictor</b> is an open-source, reproducible computational instrument and kinetic modeling engine designed to model, predict, and analyze <b>Non-Linear Effects (NLE)</b> in asymmetric synthesis and catalytic reaction design.</p><p>Features include:</p><ul><li>Automated conformer sampling (CREST/xTB) and DFT Gibbs free energy evaluation (ORCA/Gaussian)</li><li>Exact analytical Jacobian mass-balance solvers for quadratic convergence in stiff regimes (K &ge; 10<sup>7</sup>)</li><li>Kagan ML2 Reservoir and Active Dimer kinetic models</li><li>Noyori DAIB aggregation model reproducing asymmetric amplification in dialkylzinc additions</li><li>Non-linear least-squares regression for experimental enantiopurity data pairs with 95% confidence intervals</li><li>Self-contained interactive desktop HTML dashboard and standalone Windows executable</li></ul>",
+  "creators": [
+    {
+      "name": "Raza, Asif",
+      "affiliation": "Department of Chemistry, Jamia Hamdard, New Delhi, India",
+      "orcid": "0009-0000-0000-0000"
+    }
+  ],
+  "access_right": "open",
+  "license": "MIT",
+  "upload_type": "software",
+  "keywords": [
+    "asymmetric catalysis",
+    "computational chemistry",
+    "non-linear effect",
+    "kagan model",
+    "density functional theory",
+    "crest",
+    "orca",
+    "thermodynamics",
+    "reaction kinetics",
+    "enantioselectivity"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}
