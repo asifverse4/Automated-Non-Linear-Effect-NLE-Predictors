@@ -157,7 +157,7 @@ Figure 4 presents the 2D contour map of product optical purity as a function of 
 
 ## 4. Software Implementation and Reproducibility
 
-NLE-Predictor is packaged under the open-source MIT License. The code is modularized into `core`, `thermo`, `models`, `fitting`, `qc`, and `viz` subpackages. All routines feature complete PEP 484 type annotations and are validated by a 42-test continuous integration suite running across Ubuntu, macOS, and Windows.
+NLE-Predictor is packaged under the open-source MIT License. The code is modularized into `core`, `thermo`, `models`, `fitting`, `qc`, and `viz` subpackages. All routines feature complete PEP 484 type annotations and are validated by an extensive 52-test continuous integration suite running across Ubuntu, macOS, and Windows.
 
 ```bash
 # Python Installation
