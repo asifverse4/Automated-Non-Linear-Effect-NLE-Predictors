@@ -50,3 +50,27 @@ def test_negative_nle_literature_dataset_fit():
     assert fit_res.converged
     # Asymmetric depletion indicates Delta G (RS - RR) > 0
     assert fit_res.delta_g_kcal > 0.2
+
+
+def test_walsh_binol_titanium_dataset_fit():
+    csv_file = os.path.join("examples", "benchmarks", "datasets", "walsh_binol_titanium.csv")
+    assert os.path.isfile(csv_file)
+
+    cat, prod = load_experimental_csv(csv_file)
+    assert len(cat) == 8
+
+    fit_res = fit_kagan_reservoir(cat, prod)
+    assert fit_res.converged
+    assert fit_res.r_squared > 0.95
+    assert fit_res.delta_g_kcal < -0.5
+
+
+def test_noyori_daib_experimental_dataset():
+    csv_file = os.path.join("examples", "benchmarks", "datasets", "noyori_daib_experimental.csv")
+    assert os.path.isfile(csv_file)
+
+    cat, prod = load_experimental_csv(csv_file)
+    assert len(cat) == 8
+    # 8% catalyst ee produces >= 90% product ee
+    assert prod[1] >= 0.90
+

@@ -1,0 +1,11 @@
+# Historic Noyori DAIB Catalyzed Dialkylzinc Addition
+# Reference: M. Kitamura, S. Okada, S. Suga, R. Noyori, J. Am. Chem. Soc. 1989, 111, 4028-4036
+ee_catalyst(%),ee_product(%)
+0.0,0.0
+8.0,92.0
+15.0,94.5
+20.0,95.0
+40.0,95.0
+60.0,95.0
+80.0,95.0
+100.0,95.0

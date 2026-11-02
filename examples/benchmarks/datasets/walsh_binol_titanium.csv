@@ -1,0 +1,11 @@
+# Walsh Chiral BINOL-Titanium Diethylzinc Addition
+# Reference: P. J. Walsh et al., J. Am. Chem. Soc. 2003, 125, 14440-14451
+ee_catalyst(%),ee_product(%)
+0.0,0.0
+10.0,38.0
+20.0,62.0
+35.0,81.0
+50.0,89.5
+65.0,93.5
+80.0,96.0
+100.0,98.5
