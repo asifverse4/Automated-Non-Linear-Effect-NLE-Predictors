@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  nle-predictor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nle-predictor:latest
+    container_name: nle-predictor
+    volumes:
+      - ./calc_outputs:/workspace/calc_outputs
+      - ./examples:/workspace/examples:ro
+      - ./inputs:/workspace/inputs:ro
+    environment:
+      - MPLBACKEND=Agg
+    command: ["--help"]
