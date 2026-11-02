@@ -11,6 +11,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 import matplotlib
+
 matplotlib.use("Agg")  # Headless backend for CI/scripts
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,8 +23,6 @@ from nle_predictor.models.kagan_ml2 import NLECalculator
 from nle_predictor.models.noyori_daib import NoyoriDAIBModel
 from nle_predictor.viz.plotting import (
     plot_amplification_contour,
-    plot_monomer_speciation,
-    plot_nle_with_experimental,
     setup_publication_style,
 )
 
