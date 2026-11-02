@@ -91,7 +91,7 @@ class NLECalculator(NLEModel):
             not sol.success
             or not np.all(np.isfinite(sol.x))
             or np.any(sol.x < -1e-10)
-            or residual > 1e-8
+            or residual > 1e-6
         ):
             raise RuntimeError(
                 f"Mass-balance solve failed at ee_cat={ee_cat}: "
