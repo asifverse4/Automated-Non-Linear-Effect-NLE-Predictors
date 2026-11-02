@@ -3,7 +3,6 @@
 import pytest
 
 from nle_predictor.thermo.solvation import (
-    SOLVENT_DATABASE,
     compute_standard_state_dimerization_constant,
     concentration_correction_1atm_to_1m,
     get_solvent_properties,

@@ -3,7 +3,6 @@
 import os
 import subprocess
 import sys
-import pytest
 
 
 def test_python_m_nle_predictor_module_invocation(tmp_path):

@@ -1,7 +1,6 @@
 """Tests for manuscript figure generation pipeline."""
 
 import os
-import pytest
 
 from scripts.generate_paper_figures import (
     ensure_output_dir,
