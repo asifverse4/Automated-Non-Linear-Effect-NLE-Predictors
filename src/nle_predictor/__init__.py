@@ -74,6 +74,7 @@ from nle_predictor.thermo.solvation import (
     concentration_correction_1atm_to_1m,
     get_solvent_properties,
 )
+from nle_predictor.viz.dashboard import generate_interactive_html
 from nle_predictor.viz.plotting import (
     plot_amplification_contour,
     plot_monomer_speciation,
@@ -82,6 +83,7 @@ from nle_predictor.viz.plotting import (
 
 __all__ = [
     "cli_main",
+    "generate_interactive_html",
     # Constants
     "DEFAULT_TEMP",
     "GAS_CONSTANT_R",

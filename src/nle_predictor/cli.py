@@ -29,6 +29,7 @@ from nle_predictor.qc.orca import (
     DFTEvaluator,
 )
 from nle_predictor.thermo.boltzmann import boltzmann_weighted_free_energy
+from nle_predictor.viz.dashboard import generate_interactive_html
 from nle_predictor.viz.plotting import (
     plot_monomer_speciation,
     plot_nle_with_experimental,
@@ -91,6 +92,15 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     diag_parser.add_argument("--data", type=str, required=True, help="Path to NLE CSV data file")
+
+    # 5. DASHBOARD Subcommand
+    dash_parser = subparsers.add_parser(
+        "dashboard",
+        help="Generate and launch interactive offline HTML dashboard explorer",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    dash_parser.add_argument("--output", type=str, default="manuscript/interactive_dashboard.html", help="Output HTML filepath")
+    dash_parser.add_argument("--open", action="store_true", help="Automatically open generated dashboard in default browser")
 
     return parser
 
@@ -229,6 +239,16 @@ def execute_diagnostics(args: argparse.Namespace) -> None:
     print("=" * 50 + "\n")
 
 
+def execute_dashboard(args: argparse.Namespace) -> None:
+    """Generate and optionally open the interactive HTML dashboard."""
+    path = generate_interactive_html(args.output)
+    print(f"\nInteractive Chemistry Dashboard generated at: {os.path.abspath(path)}")
+    if args.open:
+        import webbrowser
+        webbrowser.open(f"file://{os.path.abspath(path)}")
+    print("Open the HTML file in any modern web browser to interact with the models.\n")
+
+
 def _prompt(prompt_text: str, default: str) -> str:
     """Prompt user with default value."""
     try:
@@ -256,10 +276,11 @@ def run_interactive_app() -> None:
         print("  [4] Fit Experimental HPLC/GC Data (CSV)")
         print("  [5] Analyze NLE Curve Diagnostics")
         print("  [6] Regenerate 600 DPI Manuscript Figures (1-5)")
+        print("  [7] Launch / Generate Interactive HTML Dashboard")
         print("  [0] Exit")
         print("-" * 70)
 
-        choice = _prompt("Select option (0-6)", "1")
+        choice = _prompt("Select option (0-7)", "1")
 
         if choice == "0":
             print("\nExiting NLE-Predictor. Goodbye!\n")
@@ -357,6 +378,16 @@ def run_interactive_app() -> None:
             except Exception as e:
                 print(f"Error generating figures: {e}")
 
+        elif choice == "7":
+            print("\n--- Generating Interactive HTML Dashboard ---")
+            dash_path = "manuscript/interactive_dashboard.html"
+            generate_interactive_html(dash_path)
+            print(f"Interactive Dashboard successfully generated at: {os.path.abspath(dash_path)}")
+            open_browser = _prompt("Open in default web browser now? (y/n)", "y")
+            if open_browser.lower().startswith("y"):
+                import webbrowser
+                webbrowser.open(f"file://{os.path.abspath(dash_path)}")
+
         try:
             input("\nPress Enter to return to main menu...")
         except (EOFError, KeyboardInterrupt):
@@ -380,7 +411,7 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     # If first argument is not a subcommand and arguments look like standard flags
     # (e.g. `nle_predictor.py --mock` or `nle_predictor.py --rr ...`), default to 'run'
-    subcommands = {"run", "simulate", "fit", "diagnostics"}
+    subcommands = {"run", "simulate", "fit", "diagnostics", "dashboard"}
     if argv and argv[0] not in subcommands and not argv[0].startswith("-h") and not argv[0] == "--help":
         argv = ["run"] + argv
 
@@ -392,6 +423,8 @@ def main(argv: Optional[List[str]] = None) -> None:
         execute_fit(args)
     elif args.subcommand == "diagnostics":
         execute_diagnostics(args)
+    elif args.subcommand == "dashboard":
+        execute_dashboard(args)
     elif args.subcommand == "run":
         # Run quantum workflow via root nle_predictor
         import nle_predictor
