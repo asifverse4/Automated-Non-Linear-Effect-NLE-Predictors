@@ -30,6 +30,9 @@ htmlcov/
 
 # Chemistry calculation outputs and scratch
 calc_outputs/
+test_calc_*/
+test_sim_*/
+test_mock_*/
 *.tmp
 *.log
 orca_calc_*/
