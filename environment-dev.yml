@@ -1,0 +1,17 @@
+name: nle-predictor-dev
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10
+  - numpy>=1.24.0
+  - scipy>=1.10.0
+  - matplotlib>=3.7.0
+  - pytest>=8.0.0
+  - pytest-cov>=4.1.0
+  - ruff>=0.3.0
+  - mypy>=1.9.0
+  - jupyterlab>=4.0.0
+  - pip
+  - pip:
+      - -e ".[dev]"
