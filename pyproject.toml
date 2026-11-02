@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Automated Non-Linear Effect (NLE) Predictors and Thermodynamic Intelligence for Asymmetric Catalysis"
 readme = "README.md"
 authors = [
-    { name = "Asif Raza", email = "asifraza@example.com" }
+    { name = "Asif Raza", email = "asifrazakne2005@gmail.com" }
 ]
 license = { text = "MIT" }
 keywords = [
