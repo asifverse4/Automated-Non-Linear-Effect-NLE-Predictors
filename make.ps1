@@ -14,6 +14,7 @@ function Show-Help {
     Write-Host ".\make.ps1 format      : Format code with Ruff"
     Write-Host ".\make.ps1 figures      : Regenerate manuscript figures"
     Write-Host ".\make.ps1 paper-bundle : Create self-contained manuscript zip bundle for submission"
+    Write-Host ".\make.ps1 exe          : Build standalone Windows desktop application (.exe)"
     Write-Host ".\make.ps1 clean        : Remove caches and build artifacts"
 }
 
@@ -27,6 +28,11 @@ switch ($Target.ToLower()) {
     "figures" { python scripts/generate_paper_figures.py }
     "paper-bundle" {
         python -c "import zipfile, os; z = zipfile.ZipFile('manuscript/submission_bundle.zip', 'w', zipfile.ZIP_DEFLATED); [z.write(os.path.join(r, f), os.path.relpath(os.path.join(r, f), 'manuscript')) for r, _, fs in os.walk('manuscript') for f in fs if not f.endswith('.zip')]; print('Created manuscript/submission_bundle.zip')"
+    }
+    "exe" {
+        pyinstaller --clean nle_predictor.spec
+        Compress-Archive -Path dist/nle-predictor -DestinationPath dist/nle-predictor-windows-x64.zip -Force
+        Write-Host "Standalone executable packaged: dist/nle-predictor-windows-x64.zip" -ForegroundColor Green
     }
     "clean" {
         Get-ChildItem -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue

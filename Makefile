@@ -1,4 +1,4 @@
-.PHONY: help install dev-install test lint format figures paper-bundle clean docker-build docker-run
+.PHONY: help install dev-install test lint format figures paper-bundle exe clean docker-build docker-run
 
 PYTHON ?= python
 
@@ -12,6 +12,7 @@ help:
 	@echo "make format       : Format Python code using Ruff"
 	@echo "make figures      : Generate all 600 DPI manuscript publication figures"
 	@echo "make paper-bundle : Create self-contained manuscript zip bundle for journal submission"
+	@echo "make exe          : Build standalone desktop application executable (.exe)"
 	@echo "make clean        : Remove build artifacts, pycache, and temporary files"
 	@echo "make docker-build : Build containerized Docker image"
 	@echo "make docker-run   : Run containerized CLI"
@@ -36,6 +37,9 @@ figures:
 
 paper-bundle:
 	$(PYTHON) -c "import zipfile, os; z = zipfile.ZipFile('manuscript/submission_bundle.zip', 'w', zipfile.ZIP_DEFLATED); [z.write(os.path.join(r, f), os.path.relpath(os.path.join(r, f), 'manuscript')) for r, _, fs in os.walk('manuscript') for f in fs if not f.endswith('.zip')]; print('Created manuscript/submission_bundle.zip')"
+
+exe:
+	pyinstaller --clean nle_predictor.spec
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
