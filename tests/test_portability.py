@@ -75,3 +75,26 @@ def test_environment_specifications_exist():
         env_content = f.read()
     assert "name: nle-predictor" in env_content
     assert "conda-forge" in env_content
+
+
+def test_zenodo_and_citation_metadata():
+    import json
+    assert os.path.isfile(".zenodo.json")
+    with open(".zenodo.json", "r", encoding="utf-8") as f:
+        zenodo_data = json.load(f)
+
+    assert "title" in zenodo_data
+    assert "creators" in zenodo_data
+    assert len(zenodo_data["creators"]) > 0
+    assert "Raza, Asif" in zenodo_data["creators"][0]["name"]
+    assert "Jamia Hamdard" in zenodo_data["creators"][0]["affiliation"]
+    assert zenodo_data["license"] == "MIT"
+    assert zenodo_data["upload_type"] == "software"
+
+    assert os.path.isfile("CITATION.cff")
+    with open("CITATION.cff", "r", encoding="utf-8") as f:
+        cff = f.read()
+    assert "Jamia Hamdard" in cff
+    assert "Asif" in cff
+    assert os.path.isfile("docs/ZENODO_INTEGRATION.md")
+
