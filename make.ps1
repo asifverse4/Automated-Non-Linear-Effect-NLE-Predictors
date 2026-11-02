@@ -12,8 +12,9 @@ function Show-Help {
     Write-Host ".\make.ps1 test        : Run complete test suite with pytest"
     Write-Host ".\make.ps1 lint        : Run Ruff linter"
     Write-Host ".\make.ps1 format      : Format code with Ruff"
-    Write-Host ".\make.ps1 figures     : Regenerate manuscript figures"
-    Write-Host ".\make.ps1 clean       : Remove caches and build artifacts"
+    Write-Host ".\make.ps1 figures      : Regenerate manuscript figures"
+    Write-Host ".\make.ps1 paper-bundle : Create self-contained manuscript zip bundle for submission"
+    Write-Host ".\make.ps1 clean        : Remove caches and build artifacts"
 }
 
 switch ($Target.ToLower()) {
@@ -24,6 +25,9 @@ switch ($Target.ToLower()) {
     "lint" { python -m ruff check . }
     "format" { python -m ruff format . }
     "figures" { python scripts/generate_paper_figures.py }
+    "paper-bundle" {
+        python -c "import zipfile, os; z = zipfile.ZipFile('manuscript/submission_bundle.zip', 'w', zipfile.ZIP_DEFLATED); [z.write(os.path.join(r, f), os.path.relpath(os.path.join(r, f), 'manuscript')) for r, _, fs in os.walk('manuscript') for f in fs if not f.endswith('.zip')]; print('Created manuscript/submission_bundle.zip')"
+    }
     "clean" {
         Get-ChildItem -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
         Get-ChildItem -Recurse -Directory -Filter ".pytest_cache" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
