@@ -44,3 +44,4 @@ def test_noyori_parameter_validation():
 
     with pytest.raises(ValueError, match="Dissociation constants"):
         NoyoriDAIBModel(kd_homo=-1.0)
+

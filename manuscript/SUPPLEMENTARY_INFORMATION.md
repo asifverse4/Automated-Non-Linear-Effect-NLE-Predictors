@@ -69,3 +69,4 @@ All experimental benchmarks are available in `examples/benchmarks/datasets/`:
    - Fitted $\Delta G$: $+0.38 \pm 0.11\text{ kcal/mol}$
    - $K_{\text{hetero}}/K_{\text{homo}}$ ratio: $1.05$
    - $R^2$: $0.973$
+

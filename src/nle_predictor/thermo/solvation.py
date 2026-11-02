@@ -79,3 +79,4 @@ def compute_standard_state_dimerization_constant(
     corr = concentration_correction_1atm_to_1m(temp_k, delta_n=-1)
     delta_g_soln = delta_g_dimer_gas_kcal + corr
     return float(math.exp(-delta_g_soln / (GAS_CONSTANT_R * temp_k)))
+

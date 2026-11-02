@@ -34,3 +34,4 @@ def test_paper_figures_generation(tmp_path):
             path = os.path.join(fig_dir, f"{fig_name}{ext}")
             assert os.path.isfile(path)
             assert os.path.getsize(path) > 1000
+

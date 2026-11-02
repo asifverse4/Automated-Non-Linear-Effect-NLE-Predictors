@@ -185,3 +185,4 @@ Subcommands:
 2. `nle-predictor simulate`: Instantaneous analytical simulation given $\Delta G$, $K_{\text{homo}}$, and model type.
 3. `nle-predictor fit`: Experimental data regression from CSV file.
 4. `nle-predictor diagnostics`: Mathematical curve profiling.
+

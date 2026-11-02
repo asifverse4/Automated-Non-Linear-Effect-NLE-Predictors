@@ -47,3 +47,4 @@ def test_compute_standard_state_dimerization_constant():
     # K_assoc = exp(-(-3.106) / (R*T)) ~ 188.8 M^-1
     k_soln = compute_standard_state_dimerization_constant(-5.0, temp_k=298.15)
     assert k_soln > 100.0
+
