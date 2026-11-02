@@ -40,7 +40,14 @@ def test_manuscript_sources_and_submission_bundle(tmp_path):
     manuscript_dir = os.path.join(repo_root, "manuscript")
 
     # Verify key manuscript files exist
-    for filename in ["MANUSCRIPT.md", "manuscript.tex", "manuscript_generic.tex", "references.bib", "SUPPLEMENTARY_INFORMATION.md"]:
+    for filename in [
+        "MANUSCRIPT.md",
+        "manuscript.tex",
+        "manuscript_generic.tex",
+        "references.bib",
+        "SUPPLEMENTARY_INFORMATION.md",
+        "supplementary_information.tex",
+    ]:
         path = os.path.join(manuscript_dir, filename)
         assert os.path.isfile(path), f"Missing {filename}"
         assert os.path.getsize(path) > 500

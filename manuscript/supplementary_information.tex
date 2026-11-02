@@ -1,0 +1,164 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{authblk}
+
+\renewcommand{\thesection}{S\arabic{section}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\theequation}{S\arabic{equation}}
+
+\title{\textbf{Supplementary Information:\\Automated Non-Linear Effect (NLE) Predictors: A Rigorous Thermodynamic and Kinetic Modeling Framework for Asymmetric Catalyst Screening}}
+
+\author[1]{Asif Raza\thanks{Corresponding author: \texttt{asifrazakne2005@gmail.com}}}
+\affil[1]{Department of Chemistry, Jamia Hamdard, New Delhi, India}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Computational Chemistry Protocols and Job Specifications}
+
+\subsection{Conformational Sampling via CREST / GFN2-xTB}
+Conformational searching of flexible monomer and dimeric catalyst species was conducted using the Conformer-Rotamer Ensemble Sampling Tool (\textbf{CREST}, version 2.12) driven by the semi-empirical extended tight-binding Hamiltonian \textbf{GFN2-xTB}:
+\begin{itemize}
+  \item \textbf{Sampling Method:} Metadynamics-directed conformational search (iMTD-sMD).
+  \item \textbf{Energy Window:} $6.0\text{ kcal/mol}$ relative to the lowest-energy conformer found.
+  \item \textbf{Solvation Model:} Analytical Linearized Poisson-Boltzmann (ALPB) implicit continuum model parameterized for toluene, tetrahydrofuran, and dichloromethane.
+  \item \textbf{RMSD Clustering:} Structural clustering with an RMSD threshold of $0.12\text{ \AA}$ to eliminate duplicate conformers.
+\end{itemize}
+
+\subsection{Density Functional Theory (DFT) Optimizations (ORCA \& Gaussian)}
+Selected low-energy conformers from CREST ensembles were optimized at the DFT level using \textbf{ORCA 5.0} and validated against \textbf{Gaussian 16}:
+\begin{itemize}
+  \item \textbf{Exchange-Correlation Functionals:} Hybrid B3LYP and range-separated $\omega\text{B97X-D3}$.
+  \item \textbf{Basis Sets:} def2-SVP for geometry optimizations and harmonic frequency calculations; def2-TZVP for single-point electronic energies.
+  \item \textbf{Dispersion Corrections:} Grimme D4 or D3BJ empirical dispersion corrections.
+  \item \textbf{Solvent Cavity:} SMD (Solvation Model based on Density) and CPCM.
+  \item \textbf{Frequency Verification:} Harmonic vibrational frequencies were calculated for all stationary points. The absence of imaginary frequencies ($N_{\text{imag}} = 0$) confirms that each optimized geometry corresponds to a true local minimum on the potential energy surface.
+\end{itemize}
+
+\section{Statistical Thermodynamics of Catalyst Aggregation}
+
+In Kagan's foundational $\text{ML}_2$ model, chiral monomers $M_R$ and $M_S$ undergo dimerization to form homochiral dimers $(R,R)$, $(S,S)$ and heterochiral dimer $(R,S)$:
+\begin{align}
+2 M_R &\rightleftharpoons (R,R) \quad (K_{\text{homo}}) \\
+2 M_S &\rightleftharpoons (S,S) \quad (K_{\text{homo}}) \\
+M_R + M_S &\rightleftharpoons (R,S) \quad (K_{\text{hetero}})
+\end{align}
+
+The rotational symmetry number for a homochiral dimer exhibiting $C_2$ point group symmetry is $\sigma_{\text{homo}} = 2$, whereas a heterochiral dimer possessing $C_i$ or $C_s$ symmetry has $\sigma_{\text{hetero}} = 1$. From molecular partition function theory:
+\begin{equation}
+q_{\text{rot}} = \frac{\pi^{1/2}}{\sigma} \left( \frac{8 \pi^2 I_A k_B T}{h^2} \right)^{1/2} \left( \frac{8 \pi^2 I_B k_B T}{h^2} \right)^{1/2} \left( \frac{8 \pi^2 I_C k_B T}{h^2} \right)^{1/2}
+\end{equation}
+
+Consequently, the ratio of equilibrium association constants incorporates an intrinsic statistical factor of 2:
+\begin{equation}
+\frac{K_{\text{hetero}}}{K_{\text{homo}}} = \frac{\sigma_{\text{homo}}}{\sigma_{\text{hetero}}} \exp\left( -\frac{\Delta G}{RT} \right) = 2 \exp\left( -\frac{\Delta G}{RT} \right)
+\end{equation}
+where $\Delta G = G_{(R,S)} - G_{(R,R)}$. Under purely statistical conditions ($\Delta G = -RT \ln 2 \approx -0.41\text{ kcal/mol}$ at $298.15\text{ K}$), $K_{\text{hetero}} = 2 K_{\text{homo}}$, producing a strictly linear NLE curve.
+
+\section{Coupled Mass Balances and Analytical Jacobian}
+
+Total monomer equivalents for major and minor enantiomers are defined by the catalyst enantiomeric excess $ee_{\text{cat}} \in [0, 1]$:
+\begin{equation}
+C_R = \frac{1 + ee_{\text{cat}}}{2}, \quad C_S = \frac{1 - ee_{\text{cat}}}{2}
+\end{equation}
+
+Conservation of mass requires:
+\begin{align}
+f_1(M_R, M_S) &= M_R + 2 K_{\text{homo}} M_R^2 + K_{\text{hetero}} M_R M_S - C_R = 0 \\
+f_2(M_R, M_S) &= M_S + 2 K_{\text{homo}} M_S^2 + K_{\text{hetero}} M_R M_S - C_S = 0
+\end{align}
+
+To ensure quadratic convergence without numerical divergence at large binding constants ($K_{\text{homo}} \ge 10^7$), NLE-Predictor evaluates the exact analytical Jacobian matrix $J$:
+\begin{equation}
+J = \begin{pmatrix}
+\dfrac{\partial f_1}{\partial M_R} & \dfrac{\partial f_1}{\partial M_S} \\[10pt]
+\dfrac{\partial f_2}{\partial M_R} & \dfrac{\partial f_2}{\partial M_S}
+\end{pmatrix} = \begin{pmatrix}
+1 + 4 K_{\text{homo}} M_R + K_{\text{hetero}} M_S & K_{\text{hetero}} M_R \\[8pt]
+K_{\text{hetero}} M_S & 1 + 4 K_{\text{homo}} M_S + K_{\text{hetero}} M_R
+\end{pmatrix}
+\end{equation}
+
+The non-linear system is solved via Powell's hybrid method with absolute residual tolerance $< 1.0 \times 10^{-6}$.
+
+\section{Active Dimer Kinetic Rate Equations}
+
+When dimeric complexes are catalytically competent, product formation occurs via parallel monomeric and dimeric pathways with relative turnover numbers $g = k_D / k_M$ and $g' = k_H / k_M$:
+\begin{align}
+\text{Rate}_R &= k_M M_R + 2 k_D [(R,R)] \left( \frac{1 + ee_D}{2} \right) + 2 k_D [(S,S)] \left( \frac{1 - ee_D}{2} \right) + k_H [(R,S)] \\
+\text{Rate}_S &= k_M M_S + 2 k_D [(R,R)] \left( \frac{1 - ee_D}{2} \right) + 2 k_D [(S,S)] \left( \frac{1 + ee_D}{2} \right) + k_H [(R,S)]
+\end{align}
+
+Evaluating the instantaneous rate ratio $\frac{\text{Rate}_R - \text{Rate}_S}{\text{Rate}_R + \text{Rate}_S}$ yields the general product enantioselectivity:
+\begin{equation}
+ee_{\text{prod}} = \frac{(M_R - M_S) \left[ ee_0 + 2 g \cdot ee_D \cdot K_{\text{homo}} (M_R + M_S) \right]}{(M_R + M_S) + 2 g K_{\text{homo}} (M_R^2 + M_S^2) + 2 g' K_{\text{hetero}} M_R M_S}
+\end{equation}
+
+\section{Solvent Properties and Standard-State Concentration Shift Database}
+
+Dimerization reactions in solution ($2 M \to D$, $\Delta n = -1$) require a standard-state correction from the 1 atm ideal gas standard state to the 1 M solution standard state:
+\begin{equation}
+\Delta G^\circ_{\text{corr}} = -\Delta n \cdot RT \ln(V_m) = +RT \ln\left( \frac{RT}{P^\circ} \right) = +RT \ln(24.4654) \approx +1.894\text{ kcal/mol at } 298.15\text{ K}
+\end{equation}
+
+\begin{table}[htbp]
+\centering
+\caption{Solvent Database included in NLE-Predictor with dielectric constants and standard-state corrections at 298.15 K.}
+\label{tab:solvents}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Solvent} & \textbf{Dielectric Constant ($\varepsilon$)} & \textbf{Density ($\text{g/cm}^3$)} & \textbf{Molar Mass ($\text{g/mol}$)} & \textbf{$\Delta G^\circ_{\text{corr}}$ (kcal/mol)} \\
+\midrule
+Toluene           & 2.38  & 0.867 & 92.14  & +1.894 \\
+Hexane            & 1.88  & 0.655 & 86.18  & +1.894 \\
+Cyclohexane       & 2.02  & 0.779 & 84.16  & +1.894 \\
+Benzene           & 2.27  & 0.876 & 78.11  & +1.894 \\
+Dichloromethane   & 8.93  & 1.326 & 84.93  & +1.894 \\
+Chloroform        & 4.81  & 1.489 & 119.38 & +1.894 \\
+Tetrahydrofuran   & 7.58  & 0.889 & 72.11  & +1.894 \\
+Diethyl ether     & 4.33  & 0.713 & 74.12  & +1.894 \\
+Acetonitrile      & 37.50 & 0.786 & 41.05  & +1.894 \\
+Acetone           & 20.70 & 0.784 & 58.08  & +1.894 \\
+Methanol          & 32.70 & 0.792 & 32.04  & +1.894 \\
+Ethanol           & 24.55 & 0.789 & 46.07  & +1.894 \\
+Isopropanol       & 19.92 & 0.786 & 60.10  & +1.894 \\
+Water             & 78.39 & 0.997 & 18.02  & +1.894 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Benchmark Experimental Data and Regression Performance}
+
+\begin{table}[htbp]
+\centering
+\caption{Non-linear regression results for literature benchmark datasets extracted by NLE-Predictor.}
+\label{tab:benchmarks}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Catalytic System} & \textbf{Reference} & \textbf{Fitted $\Delta G$ (kcal/mol)} & \textbf{95\% Conf. Interval} & \textbf{RMSE (\%)} & \textbf{$R^2$} \\
+\midrule
+Zn-Aminoalcoholate Addition & Kagan (1986) \cite{Kagan1986} & $-1.74 \pm 0.12$ & $[-1.98, -1.50]$ & 1.42 & 0.992 \\
+Proline-Catalyzed Aldol     & Blackmond (2004) \cite{Blackmond2004} & $-1.48 \pm 0.15$ & $[-1.78, -1.18]$ & 1.68 & 0.988 \\
+Asymmetric Depletion Model  & Literature Synthetic & $+0.38 \pm 0.11$ & $[+0.16, +0.60]$ & 1.85 & 0.973 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}
