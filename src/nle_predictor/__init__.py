@@ -67,6 +67,13 @@ from nle_predictor.thermo.boltzmann import (
     calculate_ensemble,
     conformational_entropy,
 )
+from nle_predictor.thermo.solvation import (
+    SOLVENT_DATABASE,
+    SolventProperties,
+    compute_standard_state_dimerization_constant,
+    concentration_correction_1atm_to_1m,
+    get_solvent_properties,
+)
 from nle_predictor.viz.plotting import (
     plot_amplification_contour,
     plot_monomer_speciation,
@@ -95,11 +102,16 @@ __all__ = [
     "write_xyz",
     "validate_xyz_file",
     "calculate_rmsd",
-    # Thermo
+    # Thermo & Solvation
     "boltzmann_weighted_free_energy",
     "boltzmann_weights",
     "conformational_entropy",
     "calculate_ensemble",
+    "SOLVENT_DATABASE",
+    "SolventProperties",
+    "get_solvent_properties",
+    "concentration_correction_1atm_to_1m",
+    "compute_standard_state_dimerization_constant",
     # Fitting & Regression
     "fit_kagan_reservoir",
     "load_experimental_csv",
