@@ -12,11 +12,13 @@ from nle_predictor.models.diagnostics import (
 )
 from nle_predictor.models.kagan_active import KaganActiveDimerModel
 from nle_predictor.models.kagan_ml2 import NLECalculator, write_sensitivity_report
+from nle_predictor.models.noyori_daib import NoyoriDAIBModel
 
 __all__ = [
     "NLEModel",
     "NLECalculator",
     "KaganActiveDimerModel",
+    "NoyoriDAIBModel",
     "write_sensitivity_report",
     "NLEDiagnostics",
     "analyze_nle_diagnostics",

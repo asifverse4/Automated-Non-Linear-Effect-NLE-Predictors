@@ -49,6 +49,7 @@ from nle_predictor.models.kagan_ml2 import (
     NLECalculator,
     write_sensitivity_report,
 )
+from nle_predictor.models.noyori_daib import NoyoriDAIBModel
 from nle_predictor.qc.crest import ConformerSampler
 from nle_predictor.qc.gaussian import (
     extract_gaussian_free_energy,
@@ -111,6 +112,7 @@ __all__ = [
     "NLEModel",
     "NLECalculator",
     "KaganActiveDimerModel",
+    "NoyoriDAIBModel",
     "write_sensitivity_report",
     "NLEDiagnostics",
     "analyze_nle_diagnostics",
