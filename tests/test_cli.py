@@ -55,3 +55,21 @@ def test_cli_run_mock(tmp_path):
     assert os.path.isfile(outdir / "nle_curve.png")
     assert os.path.isfile(outdir / "speciation_curve.png")
 
+
+def test_cli_empty_args_or_interactive_in_non_tty(capsys):
+    main([])
+    captured = capsys.readouterr()
+    assert "nle-predictor" in captured.out
+    assert "usage:" in captured.out
+
+
+def test_pyinstaller_spec_configuration():
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    spec_path = os.path.join(repo_root, "nle_predictor.spec")
+    assert os.path.isfile(spec_path)
+    with open(spec_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    assert "src/nle_predictor/__main__.py" in content
+    assert "nle-predictor" in content
+
+

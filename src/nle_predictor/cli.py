@@ -22,6 +22,7 @@ from nle_predictor.models.kagan_ml2 import (
     NLECalculator,
     write_sensitivity_report,
 )
+from nle_predictor.models.noyori_daib import NoyoriDAIBModel
 from nle_predictor.qc.crest import ConformerSampler
 from nle_predictor.qc.orca import (
     Config,
@@ -42,6 +43,10 @@ def build_parser() -> argparse.ArgumentParser:
         prog="nle-predictor",
         description="Automated Non-Linear Effect (NLE) Predictors and Thermodynamic Intelligence for Asymmetric Catalysis",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    parser.add_argument(
+        "-i", "--interactive", action="store_true", help="Launch interactive desktop console mode"
     )
 
     subparsers = parser.add_subparsers(dest="subcommand", help="Available subcommands")
@@ -224,6 +229,140 @@ def execute_diagnostics(args: argparse.Namespace) -> None:
     print("=" * 50 + "\n")
 
 
+def _prompt(prompt_text: str, default: str) -> str:
+    """Prompt user with default value."""
+    try:
+        val = input(f"{prompt_text} [{default}]: ").strip()
+        return val if val else default
+    except (EOFError, KeyboardInterrupt):
+        return default
+
+
+def run_interactive_app() -> None:
+    """Interactive desktop application console mode."""
+    if not sys.stdin.isatty():
+        build_parser().print_help()
+        return
+
+    while True:
+        print("\n" + "=" * 70)
+        print("  NLE-Predictor v1.0.0 — Standalone Chemistry Modeling Suite")
+        print("  Department of Chemistry, Jamia Hamdard")
+        print("  Author: Asif Raza (asifrazakne2005@gmail.com)")
+        print("=" * 70)
+        print("  [1] Quick NLE Simulation (Kagan ML2 Reservoir Model)")
+        print("  [2] Active Dimer Kinetics Simulation (k_dimer / k_monomer)")
+        print("  [3] Noyori DAIB Aggregation Model Simulation")
+        print("  [4] Fit Experimental HPLC/GC Data (CSV)")
+        print("  [5] Analyze NLE Curve Diagnostics")
+        print("  [6] Regenerate 600 DPI Manuscript Figures (1-5)")
+        print("  [0] Exit")
+        print("-" * 70)
+
+        choice = _prompt("Select option (0-6)", "1")
+
+        if choice == "0":
+            print("\nExiting NLE-Predictor. Goodbye!\n")
+            break
+
+        elif choice == "1":
+            print("\n--- Kagan ML2 Reservoir Simulation ---")
+            dg_str = _prompt("Enter Delta G (RS - RR) in kcal/mol", "-1.8")
+            ee0_str = _prompt("Enter intrinsic enantioselectivity ee0 (0.0 - 1.0)", "1.0")
+            outdir = _prompt("Enter output directory", "sim_outputs")
+            try:
+                dg = float(dg_str)
+                ee0 = float(ee0_str)
+                args = argparse.Namespace(
+                    delta_g=dg, khomo=1e5, temp=DEFAULT_TEMP, ee0=ee0, g=0.0, outdir=outdir
+                )
+                execute_simulate(args)
+            except Exception as e:
+                print(f"Error during simulation: {e}")
+
+        elif choice == "2":
+            print("\n--- Kagan Active Dimer Kinetics Simulation ---")
+            dg_str = _prompt("Enter Delta G (RS - RR) in kcal/mol", "-1.8")
+            g_str = _prompt("Enter relative dimer rate g = kD/kM", "0.5")
+            ee0_str = _prompt("Enter monomer ee0", "1.0")
+            outdir = _prompt("Enter output directory", "active_dimer_outputs")
+            try:
+                args = argparse.Namespace(
+                    delta_g=float(dg_str), khomo=1e5, temp=DEFAULT_TEMP, ee0=float(ee0_str),
+                    g=float(g_str), outdir=outdir
+                )
+                execute_simulate(args)
+            except Exception as e:
+                print(f"Error during active dimer simulation: {e}")
+
+        elif choice == "3":
+            print("\n--- Noyori DAIB Aggregation Model ---")
+            outdir = _prompt("Enter output directory", "noyori_outputs")
+            os.makedirs(outdir, exist_ok=True)
+            try:
+                model = NoyoriDAIBModel()
+                ee_cat = np.linspace(0.0, 1.0, 101)
+                res = model.simulate(ee_cat)
+                plot_path = os.path.join(outdir, "noyori_curve.png")
+                plot_nle_with_experimental(res, save_path=plot_path)
+                spec_path = os.path.join(outdir, "noyori_speciation.png")
+                plot_monomer_speciation(res, save_path=spec_path)
+                print("\nNoyori DAIB simulation completed!")
+                print(f"Plots and speciation saved to: {outdir}")
+            except Exception as e:
+                print(f"Error during Noyori simulation: {e}")
+
+        elif choice == "4":
+            print("\n--- Experimental Data Fitting ---")
+            default_csv = os.path.join("examples", "benchmarks", "datasets", "kagan_amplification.csv")
+            csv_path = _prompt("Path to CSV data (ee_cat, ee_prod)", default_csv)
+            outdir = _prompt("Output directory", "fit_outputs")
+            try:
+                args = argparse.Namespace(
+                    data=csv_path, temp=DEFAULT_TEMP, khomo=1e5, fit_ee0=False, outdir=outdir
+                )
+                execute_fit(args)
+            except Exception as e:
+                print(f"Error during fitting: {e}")
+
+        elif choice == "5":
+            print("\n--- Curve Diagnostics Profiling ---")
+            default_csv = os.path.join("examples", "benchmarks", "datasets", "kagan_amplification.csv")
+            csv_path = _prompt("Path to CSV data", default_csv)
+            try:
+                args = argparse.Namespace(data=csv_path)
+                execute_diagnostics(args)
+            except Exception as e:
+                print(f"Error during diagnostics: {e}")
+
+        elif choice == "6":
+            print("\n--- Regenerating Publication Figures (1-5) ---")
+            try:
+                from scripts.generate_paper_figures import (
+                    ensure_output_dir,
+                    generate_figure_1_kagan_models,
+                    generate_figure_2_speciation,
+                    generate_figure_3_experimental_benchmarks,
+                    generate_figure_4_contour_landscape,
+                    generate_figure_5_noyori_daib,
+                )
+                fig_dir = os.path.join("manuscript", "figures")
+                ensure_output_dir(fig_dir)
+                generate_figure_1_kagan_models(fig_dir)
+                generate_figure_2_speciation(fig_dir)
+                generate_figure_3_experimental_benchmarks(fig_dir)
+                generate_figure_4_contour_landscape(fig_dir)
+                generate_figure_5_noyori_daib(fig_dir)
+                print(f"\nAll 5 manuscript figures successfully generated at 600 DPI in {fig_dir}!")
+            except Exception as e:
+                print(f"Error generating figures: {e}")
+
+        try:
+            input("\nPress Enter to return to main menu...")
+        except (EOFError, KeyboardInterrupt):
+            break
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     """Main CLI entry point."""
     if argv is None:
@@ -231,15 +370,19 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     parser = build_parser()
 
+    if not argv:
+        run_interactive_app()
+        return
+
+    if "-i" in argv or "--interactive" in argv:
+        run_interactive_app()
+        return
+
     # If first argument is not a subcommand and arguments look like standard flags
     # (e.g. `nle_predictor.py --mock` or `nle_predictor.py --rr ...`), default to 'run'
     subcommands = {"run", "simulate", "fit", "diagnostics"}
     if argv and argv[0] not in subcommands and not argv[0].startswith("-h") and not argv[0] == "--help":
         argv = ["run"] + argv
-    elif not argv:
-        # Default to showing help
-        parser.print_help()
-        return
 
     args = parser.parse_args(argv)
 
