@@ -72,13 +72,23 @@ For the full theoretical derivations, analytical Jacobians, active dimer kinetic
 
 ## Installation & Portability
 
-### Option 0: Download Pre-built Release Wheel or Tarball
-Pre-built wheels and source archives are available on the [GitHub Releases](https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors/releases) page for one-click download:
+### Option 0: Standalone Windows App (.exe — No Python Installation Required)
+For instant desktop use without configuring Python, Conda, or compilers:
+1. Download `nle-predictor-windows-x64.zip` from [GitHub Releases](https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors/releases).
+2. Extract the ZIP archive anywhere on your machine.
+3. **Interactive Mode:** Simply double-click `nle-predictor.exe` to launch the interactive chemistry modeling console.
+4. **Command-Line Mode:** Run directly from CMD or PowerShell:
+   ```powershell
+   .\nle-predictor.exe simulate --delta-g -1.8 --outdir sim_results
+   .\nle-predictor.exe fit --data examples/benchmarks/datasets/kagan_amplification.csv
+   ```
+
+### Option A: Pre-built Release Wheel (.whl)
 ```bash
 python -m pip install nle_predictor-1.0.0-py3-none-any.whl
 ```
 
-### Option A: Via Pip / PyPI Standard
+### Option B: From Source (Pip)
 
 ```bash
 git clone https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors.git

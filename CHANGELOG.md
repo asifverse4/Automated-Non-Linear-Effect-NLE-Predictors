@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Interactive research tutorial Jupyter notebook (`notebooks/nle_research_tutorial.ipynb`).
 
 - **Multi-Platform Portability & DevOps:**
+  - Standalone Windows desktop executable (`nle-predictor.exe`) bundled into `nle-predictor-windows-x64.zip` with zero runtime Python dependencies.
+  - Interactive desktop console mode with formatted guided menus for simulation, fitting, Noyori analysis, and figure generation.
   - Containerized reproducible environment (`Dockerfile`, `docker-compose.yml`, `.dockerignore`).
   - Multi-platform Conda environments (`environment.yml` and `environment-dev.yml`).
   - Cross-platform task automation runners (`Makefile` for Linux/macOS and `make.ps1` for Windows PowerShell).
@@ -44,3 +46,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GitHub Actions CI matrix testing across Ubuntu, macOS, and Windows with Python 3.10–3.13 (`.github/workflows/ci.yml`).
   - Automated GitHub release pipeline packaging wheels, sdist, and manuscript bundles (`.github/workflows/release.yml`).
   - Comprehensive 53-test verification suite covering 100% of submodules.
+
