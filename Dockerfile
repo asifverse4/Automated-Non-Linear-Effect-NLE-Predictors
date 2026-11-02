@@ -38,3 +38,4 @@ WORKDIR /workspace
 # Default entrypoint runs the unified CLI
 ENTRYPOINT ["nle-predictor"]
 CMD ["--help"]
+

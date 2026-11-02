@@ -14,3 +14,4 @@ services:
     environment:
       - MPLBACKEND=Agg
     command: ["--help"]
+

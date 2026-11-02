@@ -13,6 +13,11 @@ _src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
 if _src_dir not in sys.path:
     sys.path.insert(0, _src_dir)
 
+# Enable package-like submodule imports from src/nle_predictor
+__path__ = [os.path.join(_src_dir, "nle_predictor")]
+if "nle_predictor" in sys.modules:
+    sys.modules["nle_predictor"].__path__ = __path__
+
 # Re-export core constants and functions for 100% backward compatibility
 from nle_predictor.cli import main
 from nle_predictor.core.constants import (
