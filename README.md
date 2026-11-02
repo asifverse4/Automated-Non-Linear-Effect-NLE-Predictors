@@ -69,22 +69,45 @@ For the full theoretical derivations, analytical Jacobians, active dimer kinetic
 
 ---
 
-## Installation
+## Installation & Portability
 
-### From Source
+### Option A: Via Pip / PyPI Standard
 
 ```bash
 git clone https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors.git
 cd Automated-Non-Linear-Effect-NLE-Predictors
-python -m pip install -e .
+python -m pip install -e ".[dev]"
 ```
 
-### Development & Testing Setup
+### Option B: Via Conda / Mamba Environment
 
 ```bash
-python -m pip install -e ".[dev]"
-python -m pytest -v
+conda env create -f environment.yml
+conda activate nle-predictor
 ```
+
+For a development and Jupyter-enabled environment:
+```bash
+conda env create -f environment-dev.yml
+conda activate nle-predictor-dev
+```
+
+### Option C: Containerized Execution (Docker)
+
+100% reproducible and isolated environment across all Linux, macOS, and Windows workstations or HPC clusters:
+
+```bash
+# Build the Docker image
+docker build -t nle-predictor:latest .
+
+# Run simulations via Docker
+docker run --rm -v $(pwd)/calc_outputs:/workspace/calc_outputs nle-predictor simulate --delta-g -1.8 --outdir calc_outputs
+```
+
+### Automation & Task Runners
+
+- **Linux / macOS:** Use `make test`, `make figures`, `make lint`, `make dev-install`.
+- **Windows PowerShell:** Use `.\make.ps1 test`, `.\make.ps1 figures`, `.\make.ps1 dev-install`.
 
 ---
 
