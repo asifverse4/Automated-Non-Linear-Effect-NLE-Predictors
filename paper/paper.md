@@ -9,7 +9,7 @@ tags:
   - density functional theory
 authors:
   - name: Asif Raza
-    orcid: 0009-0000-0000-0000
+    orcid: 0009-0000-3850-4907
     affiliation: 1
 affiliations:
   - name: Department of Chemistry, Jamia Hamdard, New Delhi, India
