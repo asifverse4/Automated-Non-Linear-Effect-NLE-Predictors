@@ -39,10 +39,10 @@ Despite the fundamental importance of catalyst aggregation in modern synthetic m
 
 - `core`: Standard physical constants, 1 atm to 1 M concentration corrections, atomic XYZ structure parsing, and Kabsch RMSD alignment.
 - `thermo`: Boltzmann ensemble weighting, conformational entropy calculations ($S_{\text{conf}}$), and a 14-solvent dielectric property database.
-- `models`: Implementations of the Kagan $\text{ML}_2$ Reservoir Model, Kagan Active Dimer Model, Noyori DAIB Aggregation Model, and mathematical diagnostics (initial slope $S_0$, curvature $\kappa$, maximum amplification $\alpha_{\text{max}}$, and inflection points).
-- `fitting`: Non-linear least-squares regression module using Levenberg-Marquardt and Trust-Region reflective algorithms to fit experimental data pairs with 95% confidence intervals and residual plots.
-- `qc`: Automated parsing and validation for CREST/xTB conformer searches and ORCA 5.0 / Gaussian 16 DFT output logs.
-- `viz`: Publication-grade dual-panel and residual plotting engines producing 600 DPI PNG, vector PDF, and SVG figures.
+- `models`: Implementations of the Kagan $\text{ML}_2$ Reservoir Model, Kagan Active Dimer Model, Kagan Higher-Order Oligomers ($\text{ML}_3$ trimers and $\text{ML}_4$ tetramers with statistical combinatorial symmetry factors), Soai Asymmetric Autocatalysis Kinetic Engine, Noyori DAIB Aggregation Model, and mathematical diagnostics (initial slope $S_0$, curvature $\kappa$, maximum amplification $\alpha_{\text{max}}$, and inflection points).
+- `fitting`: Non-linear least-squares regression module using Levenberg-Marquardt and Trust-Region reflective algorithms, global multi-temperature van 't Hoff enthalpy/entropy ($\Delta\Delta H^\circ, \Delta\Delta S^\circ$) deconvolution, and non-parametric bootstrap Monte Carlo uncertainty quantification ($B \ge 1000$).
+- `qc`: Automated parsing and validation for CREST/xTB conformer searches, ORCA 5.0 / Gaussian 16 / Q-Chem DFT input generators, and curated 3D chiral ligand conformer gallery (BINOL, DAIB, PyBOX).
+- `viz`: Publication-grade dual-panel and residual plotting engines producing 600 DPI PNG, vector PDF, and SVG figures, accompanied by an interactive offline HTML dashboard explorer.
 
 # Mathematical Formulation
 

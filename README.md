@@ -12,12 +12,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python Versions">
+  <img src="https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python Versions">
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License: MIT">
+  <img src="https://img.shields.io/badge/Tests-94%20passed-success?style=flat-square" alt="Test Status">
   <img src="https://img.shields.io/badge/CREST-xTB-176B87?style=flat-square" alt="CREST and xTB">
   <img src="https://img.shields.io/badge/ORCA-DFT-5B4B8A?style=flat-square" alt="ORCA DFT">
   <img src="https://img.shields.io/badge/Gaussian-09%2F16-B02A37?style=flat-square" alt="Gaussian Support">
-  <img src="https://img.shields.io/badge/Models-Kagan%20ML2%20%2B%20Active%20Dimer-C45A2A?style=flat-square" alt="Kagan Models">
+  <img src="https://img.shields.io/badge/Models-Kagan%20ML2%2FML3%2FML4%20%2B%20Soai%20%2B%20Noyori-C45A2A?style=flat-square" alt="Kagan and Soai Models">
   <a href="https://github.com/asifverse4/Automated-Non-Linear-Effect-NLE-Predictors/releases"><img src="https://img.shields.io/badge/release-v1.0.0-blue.svg?style=flat-square" alt="Release v1.0.0"></a>
   <a href="docs/ZENODO_INTEGRATION.md"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo-blue.svg?style=flat-square" alt="DOI: Zenodo Archive"></a>
 </p>
@@ -197,6 +198,62 @@ Calculate initial slope $S_0$, maximum amplification factor $\alpha_{\text{max}}
 nle-predictor diagnostics --data examples/benchmarks/datasets/kagan_amplification.csv
 ```
 
+### 5. Higher-Order Kagan Oligomer Simulation (`oligomer`)
+
+Simulate trimer ($n=3$) or tetramer ($n=4$) aggregation models with statistical combinatorial symmetry factors:
+
+```bash
+# Simulate Kagan ML3 trimer model with heterochiral stabilization
+nle-predictor oligomer --order 3 --delta-g -1.5 --outdir oligomer_results
+
+# Simulate Kagan ML4 tetramer model with active aggregate turnover
+nle-predictor oligomer --order 4 --delta-g -1.2 --active --outdir tetramer_results
+```
+
+### 6. Asymmetric Autocatalysis & Soai Reaction Simulation (`soai`)
+
+Simulate temporal kinetic trajectories and hyper-amplification from trace seed optical purity:
+
+```bash
+# Simulate temporal reaction trajectory from 2% seed enantiomeric excess
+nle-predictor soai --seed-ee 0.02 --seed-cat 0.002 --t-final 3600 --outdir soai_kinetic
+
+# Simulate complete batch NLE curve across seed ee range
+nle-predictor soai --batch-curve --outdir soai_curve
+```
+
+### 7. Global Multi-Temperature van 't Hoff Deconvolution (`vthoff`)
+
+Perform global simultaneous non-linear regression across multi-temperature NLE curves to extract $\Delta\Delta H^\circ$, $\Delta\Delta S^\circ$, and the isoinversion temperature $T_{\text{inv}}$:
+
+```bash
+nle-predictor vthoff --data examples/benchmarks/datasets/multi_temperature_nle.csv --outdir vthoff_results
+```
+
+### 8. Bootstrap Monte Carlo Uncertainty Quantification (`bootstrap`)
+
+Quantify non-parametric 95% confidence intervals, parameter bias, and 2D confidence ellipses via residual or case resampling:
+
+```bash
+nle-predictor bootstrap --data examples/benchmarks/datasets/kagan_amplification.csv --n-bootstraps 1000 --method residual
+```
+
+### 9. Chiral Ligand 3D Conformer Gallery & DFT Generator (`gallery`)
+
+Inspect curated benchmark structures and export production-ready DFT input files for ORCA, Gaussian, or Q-Chem:
+
+```bash
+nle-predictor gallery --ligand binol --software orca --functional wB97X-D4 --basis def2-TZVP --solvent dichloromethane
+```
+
+### 10. Interactive Chemistry Dashboard (`dashboard`)
+
+Generate a standalone, offline-compatible HTML application with live sliders, Newton-Raphson solvers, and drag-and-drop CSV overlay:
+
+```bash
+nle-predictor dashboard --open
+```
+
 ---
 
 ## Python API Usage
@@ -261,14 +318,14 @@ Automated-Non-Linear-Effect-NLE-Predictors/
 |   `-- nle_predictor/
 |       |-- core/             # Physical constants, CODATA, types, XYZ Kabsch RMSD
 |       |-- thermo/           # Boltzmann weighting, partition functions, entropy
-|       |-- models/           # Kagan ML2 Reservoir, Active Dimer, diagnostics
-|       |-- fitting/          # Non-linear regression and parameter estimation
-|       |-- qc/               # CREST, ORCA, and Gaussian parsers & runners
-|       |-- viz/              # JACS-quality visualization, speciation, contour maps
-|       `-- cli.py            # Unified command-line interface
+|       |-- models/           # Kagan ML2/ML3/ML4, Active Dimer, Soai, Noyori DAIB
+|       |-- fitting/          # Least-squares, multi-T van 't Hoff, bootstrap Monte Carlo
+|       |-- qc/               # CREST, ORCA, Gaussian, Q-Chem, and ligand gallery
+|       |-- viz/              # JACS-quality visualization, speciation, HTML dashboard
+|       `-- cli.py            # Unified command-line interface & interactive console
 |-- examples/
-|   `-- benchmarks/           # Chemical dimer XYZ structures and experimental CSVs
-|-- tests/                    # Comprehensive unit and integration test suite (28+ tests)
+|   `-- benchmarks/           # Curated dimer/trimer XYZ structures and literature CSVs
+|-- tests/                    # Comprehensive unit and integration test suite (94 tests passing)
 |-- docs/
 |   `-- THEORY.md             # Complete theoretical derivations and mathematical proofs
 |-- pyproject.toml            # PEP 517/621 packaging metadata

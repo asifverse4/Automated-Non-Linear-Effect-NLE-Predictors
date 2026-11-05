@@ -158,6 +158,93 @@ Asymmetric Depletion Model  & Literature Synthetic & $+0.38 \pm 0.11$ & $[+0.16,
 \end{tabular}
 \end{table}
 
+\section{Higher-Order Kagan Aggregation Thermodynamics ($\text{ML}_3$ and $\text{ML}_4$)}
+
+Catalyst self-assembly in asymmetric catalysis frequently extends beyond dimerization into trimers ($\text{ML}_3$, e.g. organocatalytic proline clusters and titanium alkoxide trimers) or tetramers ($\text{ML}_4$, e.g. cubic cubane clusters in organolithium and dialkylzinc chemistry).
+
+\subsection{Combinatorial Speciation and Symmetry Factors}
+For an $n$-mer aggregate $M_n$ formed from chiral monomers $R$ and $S$, the distinct aggregate species are represented by $R_k S_{n-k}$ for $k \in \{0, 1, \dots, n\}$. Under purely statistical mixing, the association constant incorporates the combinatorial weight:
+\begin{equation}
+K_{k, n-k}^{\text{stat}} = \binom{n}{k} K_{\text{homo}}
+\end{equation}
+Energetic chiral self-recognition is parameterized by the cooperativity factor $g = \exp(-\Delta\Delta G / RT)$:
+\begin{align}
+\text{Trimer } (n=3): \quad &[R_3] = K_{\text{homo}} [R]^3, \quad [R_2 S] = 3 g K_{\text{homo}} [R]^2 [S], \nonumber\\
+&[R S_2] = 3 g K_{\text{homo}} [R] [S]^2, \quad [S_3] = K_{\text{homo}} [S]^3 \\[6pt]
+\text{Tetramer } (n=4): \quad &[R_4] = K_{\text{homo}} [R]^4, \quad [R_3 S] = 4 g K_{\text{homo}} [R]^3 [S], \nonumber\\
+&[R_2 S_2] = 6 g K_{\text{homo}} [R]^2 [S]^2, \quad [R S_3] = 4 g K_{\text{homo}} [R] [S]^3, \quad [S_4] = K_{\text{homo}} [S]^4
+\end{align}
+
+\subsection{Coupled Mass Balance and Exact Analytical Jacobian}
+Total monomer conservation requires:
+\begin{align}
+F_1([R], [S]) &= [R] + \sum_{k=1}^n k K_{k, n-k} [R]^k [S]^{n-k} - C_R = 0 \\
+F_2([R], [S]) &= [S] + \sum_{k=0}^{n-1} (n-k) K_{k, n-k} [R]^k [S]^{n-k} - C_S = 0
+\end{align}
+
+The exact elements of the Jacobian matrix $J$ implemented in NLE-Predictor are:
+\begin{align}
+\frac{\partial F_1}{\partial [R]} &= 1 + \sum_{k=1}^n k^2 K_{k, n-k} [R]^{k-1} [S]^{n-k} \\[4pt]
+\frac{\partial F_1}{\partial [S]} &= \sum_{k=1}^{n-1} k (n-k) K_{k, n-k} [R]^k [S]^{n-k-1} \\[4pt]
+\frac{\partial F_2}{\partial [R]} &= \sum_{k=1}^{n-1} k (n-k) K_{k, n-k} [R]^{k-1} [S]^{n-k} \\[4pt]
+\frac{\partial F_2}{\partial [S]} &= 1 + \sum_{k=0}^{n-1} (n-k)^2 K_{k, n-k} [R]^k [S]^{n-k-1}
+\end{align}
+This analytical formulation guarantees quadratic Newton-Raphson convergence even under extreme aggregation ($K_{\text{homo}} > 10^7\text{ M}^{-(n-1)}$).
+
+\section{Asymmetric Autocatalysis and Soai Reaction Kinetic Theory}
+
+The Soai reaction (addition of diisopropylzinc to pyrimidine-5-carbaldehyde) exhibits spontaneous chiral symmetry breaking and hyper-amplification. NLE-Predictor models the complete Blackmond square-order kinetic mechanism with mutual inhibition:
+\begin{align}
+\text{Aldehyde } (A) + \text{Zn}(i\text{-Pr})_2 (B) &\xrightarrow{k_0} \frac{1}{2} P_R + \frac{1}{2} P_S \quad (\text{uncatalyzed}) \\
+A + B + [P_R]_{\text{free}}^2 &\xrightarrow{k_{\text{auto}}} [P_R]_{\text{free}}^2 + P_R \quad (\text{homochiral autocatalysis}) \\
+A + B + [P_S]_{\text{free}}^2 &\xrightarrow{k_{\text{auto}}} [P_S]_{\text{free}}^2 + P_S \quad (\text{homochiral autocatalysis})
+\end{align}
+
+Rapid reversible dimerization sequesters the minor enantiomer into an unreactive heterochiral dimer:
+\begin{equation}
+P_R + P_S \xrightleftharpoons{K_{\text{hetero}}} (P_R P_S)_{\text{inactive}}
+\end{equation}
+When $K_{\text{hetero}} \gg K_{\text{homo}}$, $(P_R P_S)$ quantitatively quenches the minor enantiomer, allowing the enantiomeric excess to hyper-amplify from trace seeds ($ee_{\text{seed}} \approx 0.001$) to $> 99.5\%$ ee. The system of stiff differential equations is integrated numerically using a 5th-order implicit Radau IIA collocation solver.
+
+\section{Multi-Temperature van 't Hoff Deconvolution and Confidence Ellipses}
+
+When NLE curves are measured across multiple reaction temperatures ($T_1, T_2, \dots, T_m$), the temperature dependence of chiral self-recognition is governed by the Gibbs-Helmholtz relation:
+\begin{equation}
+\Delta\Delta G^\circ(T) = \Delta\Delta H^\circ - T \Delta\Delta S^\circ
+\end{equation}
+where $\Delta\Delta H^\circ$ (kcal/mol) reflects differential bonding enthalpy (e.g. hydrogen bonding, $\pi$-stacking) and $\Delta\Delta S^\circ$ (cal/(mol$\cdot$K)) reflects conformational reorganization and solvent desolvation entropy.
+
+Simultaneous global non-linear least-squares minimization extracts $(\Delta\Delta H^\circ, \Delta\Delta S^\circ)$ with parameter covariance matrix $\mathbf{\Sigma} = s^2 (\mathbf{J}^T \mathbf{J})^{-1}$. The isoinversion temperature $T_{\text{inv}}$:
+\begin{equation}
+T_{\text{inv}} = \frac{\Delta\Delta H^\circ}{\Delta\Delta S^\circ}
+\end{equation}
+identifies the critical thermodynamic threshold where chiral discrimination vanishes ($\Delta\Delta G^\circ(T_{\text{inv}}) = 0$, $g = 1$, producing a linear NLE), above which asymmetric amplification can invert sign. Joint 95\% confidence ellipses in the $(\Delta\Delta H^\circ, \Delta\Delta S^\circ)$ plane explicitly quantify enthalpy-entropy compensation.
+
+\section{Non-Parametric Bootstrap Monte Carlo Uncertainty Quantification}
+
+To bypass the linearity assumptions of asymptotic Fisher information standard errors, NLE-Predictor provides non-parametric residual and case bootstrap resampling ($B \ge 1000$). For each replication $b \in \{1, \dots, B\}$:
+\begin{equation}
+y_i^{*(b)} = \hat{y}_i + r_j^{*(b)}, \quad r_j^{*(b)} \sim \text{Uniform}(\{r_1 - \bar{r}, \dots, r_N - \bar{r}\})
+\end{equation}
+Re-estimation across all replications provides empirical 95\% confidence intervals, parameter bias $\mathbb{E}[\hat{\theta}^*] - \hat{\theta}$, and the full non-linear joint parameter correlation distribution.
+
+\section{Curated Chiral Ligand 3D Conformer Gallery}
+
+\begin{table}[htbp]
+\centering
+\caption{Curated benchmark chiral ligand complexes provided in NLE-Predictor for automated DFT input generation.}
+\label{tab:gallery}
+\begin{tabular}{lllcc}
+\toprule
+\textbf{Ligand Scaffold} & \textbf{Complex Formulation} & \textbf{Catalytic Application} & \textbf{Point Group (RR)} & \textbf{Point Group (RS)} \\
+\midrule
+DAIB  & $\text{Zn}_2(\text{DAIB})_2(\text{Me})_2$ & Dialkylzinc aldehyde addition & $C_2$ & $C_i$ \\
+BINOL & $\text{Ti}_2(\text{BINOL})_2(\text{O}i\text{-Pr})_4$ & Asymmetric Lewis acid catalysis & $C_2$ & $C_s$ \\
+PyBOX & $\text{Cu}_2(\text{PyBOX})_2\text{Cl}_4$ & Cyclopropanation and allylation & $C_2$ & $C_i$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \bibliographystyle{unsrt}
 \bibliography{references}
 
