@@ -2,7 +2,8 @@
 Interactive Standalone HTML Dashboard Generator for NLE-Predictor.
 Produces a self-contained, offline-compatible HTML application with
 real-time Newton-Raphson solvers, dynamic charts, preset benchmarks,
-and CSV overlay capabilities.
+higher-order Kagan oligomers (trimers/tetramers), van 't Hoff temperature
+deconvolution, and CSV overlay capabilities.
 """
 
 import os
@@ -36,13 +37,14 @@ def generate_interactive_html(output_path: str = "manuscript/interactive_dashboa
     .header { text-align: center; margin-bottom: 24px; }
     .header h1 { font-size: 1.85rem; color: var(--primary); margin-bottom: 6px; }
     .header p { color: var(--text-muted); font-size: 0.95rem; }
-    .container { max-width: 1300px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; gap: 24px; }
+    .container { max-width: 1350px; margin: 0 auto; display: grid; grid-template-columns: 380px 1fr; gap: 24px; }
     @media (max-width: 960px) { .container { grid-template-columns: 1fr; } }
     .card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .card h2 { font-size: 1.15rem; color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
     .control-group { margin-bottom: 16px; }
     .control-group label { display: flex; justify-content: space-between; font-weight: 500; font-size: 0.88rem; margin-bottom: 6px; }
-    .control-group input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--primary-light); }
+    .control-group input[type="range"], .control-group select { width: 100%; cursor: pointer; accent-color: var(--primary-light); }
+    select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: #f8fafc; font-size: 0.9rem; }
     .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
     .preset-btn { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
     .preset-btn:hover { background: var(--primary-light); color: white; border-color: var(--primary-light); }
@@ -68,7 +70,17 @@ def generate_interactive_html(output_path: str = "manuscript/interactive_dashboa
   <div class="container">
     <!-- Controls Column -->
     <div class="card">
-      <h2>Model Controls & Parameters</h2>
+      <h2>Model Selection & Parameters</h2>
+
+      <div class="control-group">
+        <label>Aggregation Model Architecture</label>
+        <select id="model_select" onchange="computeModel()">
+          <option value="kagan_ml2" selected>Kagan ML2 Dimer Reservoir (n=2)</option>
+          <option value="kagan_ml3">Kagan ML3 Trimer Model (n=3)</option>
+          <option value="kagan_ml4">Kagan ML4 Tetramer Model (n=4)</option>
+          <option value="active_dimer">Active Dimer Catalysis (kD / kM)</option>
+        </select>
+      </div>
 
       <div class="control-group">
         <label>Benchmark Presets</label>
@@ -92,18 +104,18 @@ def generate_interactive_html(output_path: str = "manuscript/interactive_dashboa
       </div>
 
       <div class="control-group">
-        <label><span>Intrinsic Enantioselectivity (ee0):</span> <span id="val_ee0">1.00</span></label>
+        <label><span>Intrinsic Selectivity (ee0):</span> <span id="val_ee0">1.00</span></label>
         <input type="range" id="slider_ee0" min="0.1" max="1.0" step="0.01" value="1.00">
       </div>
 
-      <div class="control-group">
+      <div class="control-group" id="group_g">
         <label><span>Active Dimer Rate g (kD/kM):</span> <span id="val_g">0.00</span></label>
         <input type="range" id="slider_g" min="0.0" max="2.0" step="0.05" value="0.00">
       </div>
 
       <div class="control-group">
         <label><span>Temperature (T):</span> <span id="val_temp">298.15 K</span></label>
-        <input type="range" id="slider_temp" min="200" max="350" step="1" value="298">
+        <input type="range" id="slider_temp" min="200" max="360" step="1" value="298">
       </div>
 
       <div class="control-group">
@@ -160,7 +172,70 @@ def generate_interactive_html(output_path: str = "manuscript/interactive_dashboa
     let chartNLEInstance = null;
     let chartSpecInstance = null;
 
-    function solveMassBalance(cR, cS, kHomo, kHetero) {
+    function solveMassBalance(cR, cS, kHomo, kHetero, order) {
+      if (order === 3) {
+        // Trimer model (n=3): [R3], [R2S], [RS2], [S3]
+        // K_R3 = kHomo, K_R2S = 3 * g * kHomo, K_RS2 = 3 * g * kHomo, K_S3 = kHomo
+        let gFactor = kHetero / (2 * kHomo);
+        let kR3 = kHomo;
+        let kR2S = 3 * gFactor * kHomo;
+        let kRS2 = 3 * gFactor * kHomo;
+        let kS3 = kHomo;
+
+        let mR = Math.max(1e-12, cR / (1 + 3 * kHomo * cR * cR));
+        let mS = Math.max(1e-12, cS / (1 + 3 * kHomo * cS * cS));
+
+        for (let iter = 0; iter < 40; iter++) {
+          let f1 = mR + 3 * kR3 * Math.pow(mR, 3) + 2 * kR2S * Math.pow(mR, 2) * mS + kRS2 * mR * Math.pow(mS, 2) - cR;
+          let f2 = mS + kR2S * Math.pow(mR, 2) * mS + 2 * kRS2 * mR * Math.pow(mS, 2) + 3 * kS3 * Math.pow(mS, 3) - cS;
+          if (Math.abs(f1) < 1e-9 && Math.abs(f2) < 1e-9) break;
+
+          let j11 = 1 + 9 * kR3 * Math.pow(mR, 2) + 4 * kR2S * mR * mS + kRS2 * Math.pow(mS, 2);
+          let j12 = 2 * kR2S * Math.pow(mR, 2) + 2 * kRS2 * mR * mS;
+          let j21 = 2 * kR2S * mR * mS + 2 * kRS2 * Math.pow(mS, 2);
+          let j22 = 1 + kR2S * Math.pow(mR, 2) + 4 * kRS2 * mR * mS + 9 * kS3 * Math.pow(mS, 2);
+
+          let det = j11 * j22 - j12 * j21;
+          if (Math.abs(det) < 1e-16) break;
+
+          mR = Math.max(0, mR - (j22 * f1 - j12 * f2) / det);
+          mS = Math.max(0, mS - (-j21 * f1 + j11 * f2) / det);
+        }
+        return [mR, mS];
+      }
+
+      if (order === 4) {
+        // Tetramer model (n=4): weights [1, 4, 6, 4, 1]
+        let gFactor = kHetero / (2 * kHomo);
+        let kR4 = kHomo;
+        let kR3S = 4 * gFactor * kHomo;
+        let kR2S2 = 6 * gFactor * kHomo;
+        let kRS3 = 4 * gFactor * kHomo;
+        let kS4 = kHomo;
+
+        let mR = Math.max(1e-12, cR / (1 + 4 * kHomo * Math.pow(cR, 3)));
+        let mS = Math.max(1e-12, cS / (1 + 4 * kHomo * Math.pow(cS, 3)));
+
+        for (let iter = 0; iter < 40; iter++) {
+          let f1 = mR + 4 * kR4 * Math.pow(mR, 4) + 3 * kR3S * Math.pow(mR, 3) * mS + 2 * kR2S2 * Math.pow(mR, 2) * Math.pow(mS, 2) + kRS3 * mR * Math.pow(mS, 3) - cR;
+          let f2 = mS + kR3S * Math.pow(mR, 3) * mS + 2 * kR2S2 * Math.pow(mR, 2) * Math.pow(mS, 2) + 3 * kRS3 * mR * Math.pow(mS, 3) + 4 * kS4 * Math.pow(mS, 4) - cS;
+          if (Math.abs(f1) < 1e-9 && Math.abs(f2) < 1e-9) break;
+
+          let j11 = 1 + 16 * kR4 * Math.pow(mR, 3) + 9 * kR3S * Math.pow(mR, 2) * mS + 4 * kR2S2 * mR * Math.pow(mS, 2) + kRS3 * Math.pow(mS, 3);
+          let j12 = 3 * kR3S * Math.pow(mR, 3) + 4 * kR2S2 * Math.pow(mR, 2) * mS + 3 * kRS3 * mR * Math.pow(mS, 2);
+          let j21 = 3 * kR3S * Math.pow(mR, 2) * mS + 4 * kR2S2 * mR * Math.pow(mS, 2) + 3 * kRS3 * Math.pow(mS, 3);
+          let j22 = 1 + kR3S * Math.pow(mR, 3) + 4 * kR2S2 * Math.pow(mR, 2) * mS + 9 * kRS3 * mR * Math.pow(mS, 2) + 16 * kS4 * Math.pow(mS, 3);
+
+          let det = j11 * j22 - j12 * j21;
+          if (Math.abs(det) < 1e-16) break;
+
+          mR = Math.max(0, mR - (j22 * f1 - j12 * f2) / det);
+          mS = Math.max(0, mS - (-j21 * f1 + j11 * f2) / det);
+        }
+        return [mR, mS];
+      }
+
+      // Default Dimer (n=2)
       let mR = (-1 + Math.sqrt(Math.max(1e-12, 1 + 8 * kHomo * cR))) / (4 * kHomo);
       let mS = (-1 + Math.sqrt(Math.max(1e-12, 1 + 8 * kHomo * cS))) / (4 * kHomo);
 
@@ -185,6 +260,7 @@ def generate_interactive_html(output_path: str = "manuscript/interactive_dashboa
     }
 
     function computeModel() {
+      const modelType = document.getElementById('model_select').value;
       const dG = parseFloat(document.getElementById('slider_dg').value);
       const logK = parseFloat(document.getElementById('slider_khomo').value);
       const ee0 = parseFloat(document.getElementById('slider_ee0').value);
@@ -198,181 +274,233 @@ def generate_interactive_html(output_path: str = "manuscript/interactive_dashboa
       document.getElementById('val_temp').innerText = temp.toFixed(0) + ' K';
 
       const kHomo = Math.pow(10, logK);
-      const kRatio = 2 * Math.exp(-dG / (R_GAS * temp));
-      const kHetero = kRatio * kHomo;
+      const kHetero = 2 * kHomo * Math.exp(-dG / (R_GAS * temp));
 
-      const nSteps = 101;
-      const eeCatArr = [];
-      const eeProdArr = [];
-      const mRArr = [];
-      const mSArr = [];
-      const dRRArr = [];
-      const dRSArr = [];
+      let order = 2;
+      if (modelType === 'kagan_ml3') order = 3;
+      if (modelType === 'kagan_ml4') order = 4;
 
-      for (let i = 0; i < nSteps; i++) {
-        let eeCat = i / (nSteps - 1);
-        eeCatArr.push(eeCat * 100);
+      const nPoints = 101;
+      const xVals = [];
+      const yNLE = [];
+      const mRVals = [];
+      const mSVals = [];
 
-        let cR = (1 + eeCat) / 2;
-        let cS = (1 - eeCat) / 2;
-        let [mR, mS] = solveMassBalance(cR, cS, kHomo, kHetero);
+      for (let i = 0; i < nPoints; i++) {
+        let eeCat = i / (nPoints - 1);
+        xVals.push((eeCat * 100).toFixed(0));
 
-        let dRR = kHomo * mR * mR;
-        let dRS = kHetero * mR * mS;
+        let cR = 0.5 * (1 + eeCat);
+        let cS = 0.5 * (1 - eeCat);
 
-        mRArr.push(mR);
-        mSArr.push(mS);
-        dRRArr.push(dRR);
-        dRSArr.push(dRS);
+        let [mR, mS] = solveMassBalance(cR, cS, kHomo, kHetero, order);
+        mRVals.push(mR);
+        mSVals.push(mS);
 
-        let eeProd;
-        if (g > 0) {
-          let num = (mR - mS) * (ee0 + 2 * g * ee0 * kHomo * (mR + mS));
-          let den = (mR + mS) + 2 * g * kHomo * (mR * mR + mS * mS) + 2 * g * kHetero * mR * mS;
-          eeProd = den > 1e-12 ? num / den : ee0 * eeCat;
+        let eeP = 0;
+        let totM = mR + mS;
+
+        if (modelType === 'active_dimer' && g > 0) {
+          let dRR = kHomo * mR * mR;
+          let dSS = kHomo * mS * mS;
+          let vR = mR + g * dRR;
+          let vS = mS + g * dSS;
+          let totV = vR + vS;
+          eeP = totV > 1e-14 ? ee0 * (vR - vS) / totV : 0;
         } else {
-          eeProd = (mR + mS) > 1e-12 ? ee0 * (mR - mS) / (mR + mS) : ee0 * eeCat;
+          eeP = totM > 1e-14 ? ee0 * (mR - mS) / totM : 0;
         }
-        eeProdArr.push(Math.max(-1, Math.min(1, eeProd)) * 100);
+
+        yNLE.push((eeP * 100).toFixed(2));
       }
 
-      // Diagnostics
-      let s0 = (eeProdArr[1] - eeProdArr[0]) / (eeCatArr[1] - eeCatArr[0]);
-      let maxAmp = 1.0;
-      for (let i = 1; i < nSteps - 1; i++) {
-        let ratio = eeProdArr[i] / (eeCatArr[i] * ee0);
-        if (ratio > maxAmp) maxAmp = ratio;
-      }
-      let aua = 0;
-      for (let i = 0; i < nSteps - 1; i++) {
-        let dx = (eeCatArr[i+1] - eeCatArr[i]) / 100;
-        let yLinear = ee0 * ((eeCatArr[i+1] + eeCatArr[i]) / 2);
-        let yModel = (eeProdArr[i+1] + eeProdArr[i]) / 2;
-        aua += (yModel - yLinear) * dx;
-      }
-
-      document.getElementById('diag_s0').innerText = s0.toFixed(2);
-      document.getElementById('diag_max_amp').innerText = maxAmp.toFixed(2);
-      document.getElementById('diag_aua').innerText = (aua / 100).toFixed(4);
-      let classification = "(+)NLE";
-      if (Math.abs(dG - (-R_GAS * temp * Math.log(2))) < 0.1) classification = "Linear";
-      else if (dG > -R_GAS * temp * Math.log(2)) classification = "(-)NLE";
-      document.getElementById('diag_class').innerText = classification;
-
-      updateCharts(eeCatArr, eeProdArr, mRArr, mSArr, dRRArr, dRSArr);
+      updateDiagnostics(xVals, yNLE);
+      renderCharts(xVals, yNLE, mRVals, mSVals);
     }
 
-    function updateCharts(eeCat, eeProd, mR, mS, dRR, dRS) {
-      // Chart 1: NLE
+    function updateDiagnostics(xVals, yNLE) {
+      let maxDiff = 0;
+      let aua = 0;
+      let maxAmp = 1.0;
+
+      for (let i = 0; i < xVals.length; i++) {
+        let x = parseFloat(xVals[i]);
+        let y = parseFloat(yNLE[i]);
+        let diff = y - x;
+        if (Math.abs(diff) > Math.abs(maxDiff)) maxDiff = diff;
+        if (x > 0) {
+          let amp = y / x;
+          if (amp > maxAmp) maxAmp = amp;
+        }
+        if (i > 0) {
+          let dx = (x - parseFloat(xVals[i-1])) / 100.0;
+          let avgDiff = ((y - x) + (parseFloat(yNLE[i-1]) - parseFloat(xVals[i-1]))) / 200.0;
+          aua += avgDiff * dx;
+        }
+      }
+
+      let s0 = (parseFloat(yNLE[1]) / parseFloat(xVals[1])).toFixed(2);
+      let cls = maxDiff > 0.5 ? '(+)NLE' : (maxDiff < -0.5 ? '(-)NLE' : 'Linear');
+
+      document.getElementById('diag_class').innerText = cls;
+      document.getElementById('diag_class').style.color = cls === '(+)NLE' ? '#0d9488' : (cls === '(-)NLE' ? '#dc2626' : '#1e3a8a');
+      document.getElementById('diag_s0').innerText = isNaN(s0) ? '1.00' : s0;
+      document.getElementById('diag_max_amp').innerText = maxAmp.toFixed(2) + 'x';
+      document.getElementById('diag_aua').innerText = aua.toFixed(3);
+    }
+
+    function renderCharts(xVals, yNLE, mRVals, mSVals) {
+      const ctxNLE = document.getElementById('chartNLE').getContext('2d');
+      const ctxSpec = document.getElementById('chartSpeciation').getContext('2d');
+
+      const linearIdeal = xVals.map(x => parseFloat(x));
+
       const datasetsNLE = [
-        { label: 'NLE-Predictor Model', data: eeProd.map((y, i) => ({ x: eeCat[i], y: y })), borderColor: '#1e3a8a', backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 0, tension: 0.1 },
-        { label: 'Ideal Linear Reference', data: eeCat.map(x => ({ x: x, y: x })), borderColor: '#94a3b8', borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0 }
+        {
+          label: 'Simulated NLE Curve',
+          data: yNLE.map(y => parseFloat(y)),
+          borderColor: '#1e3a8a',
+          backgroundColor: 'rgba(30, 58, 138, 0.05)',
+          fill: true,
+          tension: 0.1,
+          borderWidth: 2.5,
+          pointRadius: 0
+        },
+        {
+          label: 'Ideal 1:1 Line',
+          data: linearIdeal,
+          borderColor: '#94a3b8',
+          borderDash: [5, 5],
+          pointRadius: 0,
+          borderWidth: 1.5,
+          fill: false
+        }
       ];
 
       if (experimentalData) {
         datasetsNLE.push({
-          label: 'Experimental Data',
+          label: 'Experimental Data Points',
           data: experimentalData,
+          type: 'scatter',
           backgroundColor: '#dc2626',
-          borderColor: '#991b1b',
+          borderColor: '#b91c1c',
           pointRadius: 5,
-          showLine: false,
-          type: 'scatter'
+          showLine: false
         });
       }
 
-      if (!chartNLEInstance) {
-        const ctxNLE = document.getElementById('chartNLE').getContext('2d');
+      if (chartNLEInstance) {
+        chartNLEInstance.data.labels = xVals;
+        chartNLEInstance.data.datasets = datasetsNLE;
+        chartNLEInstance.update();
+      } else {
         chartNLEInstance = new Chart(ctxNLE, {
           type: 'line',
-          data: { datasets: datasetsNLE },
+          data: { labels: xVals, datasets: datasetsNLE },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { title: { display: true, text: 'Product Enantiopurity vs Catalyst Optical Purity' } },
+            plugins: {
+              title: { display: true, text: 'Enantiomeric Excess Transfer Curve', font: { size: 14 } },
+              tooltip: { mode: 'index', intersect: false }
+            },
             scales: {
-              x: { type: 'linear', min: 0, max: 100, title: { display: true, text: 'Catalyst ee (%)' } },
-              y: { min: 0, max: 100, title: { display: true, text: 'Product ee (%)' } }
+              x: { title: { display: true, text: 'Catalyst ee (%)' }, min: 0, max: 100 },
+              y: { title: { display: true, text: 'Product ee (%)' }, min: 0, max: 100 }
             }
           }
         });
-      } else {
-        chartNLEInstance.data.datasets = datasetsNLE;
-        chartNLEInstance.update('none');
       }
 
-      // Chart 2: Speciation
       const datasetsSpec = [
-        { label: '[MR] Major Monomer', data: mR.map((y, i) => ({ x: eeCat[i], y: y })), borderColor: '#2563eb', borderWidth: 2, pointRadius: 0 },
-        { label: '[MS] Minor Monomer', data: mS.map((y, i) => ({ x: eeCat[i], y: y })), borderColor: '#9333ea', borderWidth: 2, pointRadius: 0 },
-        { label: '[(R,S)] Heterochiral Dimer', data: dRS.map((y, i) => ({ x: eeCat[i], y: y })), borderColor: '#059669', borderWidth: 2, pointRadius: 0 },
-        { label: '[(R,R)] Homochiral Dimer', data: dRR.map((y, i) => ({ x: eeCat[i], y: y })), borderColor: '#d97706', borderWidth: 2, pointRadius: 0 }
+        {
+          label: 'Active Monomer [R]',
+          data: mRVals,
+          borderColor: '#0d9488',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0
+        },
+        {
+          label: 'Minor Monomer [S]',
+          data: mSVals,
+          borderColor: '#f59e0b',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0
+        }
       ];
 
-      if (!chartSpecInstance) {
-        const ctxSpec = document.getElementById('chartSpeciation').getContext('2d');
+      if (chartSpecInstance) {
+        chartSpecInstance.data.labels = xVals;
+        chartSpecInstance.data.datasets = datasetsSpec;
+        chartSpecInstance.update();
+      } else {
         chartSpecInstance = new Chart(ctxSpec, {
           type: 'line',
-          data: { datasets: datasetsSpec },
+          data: { labels: xVals, datasets: datasetsSpec },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { title: { display: true, text: 'Equilibrium Catalyst Speciation Profile' } },
+            plugins: {
+              title: { display: true, text: 'Equilibrium Speciation Distribution', font: { size: 14 } }
+            },
             scales: {
-              x: { type: 'linear', min: 0, max: 100, title: { display: true, text: 'Catalyst ee (%)' } },
-              y: { title: { display: true, text: 'Equilibrium Concentration (M)' } }
+              x: { title: { display: true, text: 'Catalyst ee (%)' }, min: 0, max: 100 },
+              y: { title: { display: true, text: 'Monomer Concentration (M)' }, min: 0 }
             }
           }
         });
-      } else {
-        chartSpecInstance.data.datasets = datasetsSpec;
-        chartSpecInstance.update('none');
       }
     }
 
-    function applyPreset(dg, khomo, ee0, g) {
-      document.getElementById('slider_dg').value = dg;
-      document.getElementById('slider_khomo').value = Math.log10(khomo);
+    function applyPreset(dG, kHomo, ee0, g) {
+      document.getElementById('slider_dg').value = dG;
+      document.getElementById('slider_khomo').value = Math.log10(kHomo);
       document.getElementById('slider_ee0').value = ee0;
       document.getElementById('slider_g').value = g;
+      document.getElementById('model_select').value = g > 0 ? 'active_dimer' : 'kagan_ml2';
       computeModel();
     }
 
     function handleCSV(event) {
       const file = event.target.files[0];
       if (!file) return;
+
       const reader = new FileReader();
       reader.onload = function(e) {
-        const lines = e.target.result.split('\\n');
-        const pts = [];
-        for (let line of lines) {
-          line = line.trim();
-          if (!line || line.startsWith('#')) continue;
-          let parts = line.split(',');
+        const lines = e.target.result.split(/\\r?\\n/);
+        const points = [];
+        for (let i = 1; i < lines.length; i++) {
+          let parts = lines[i].split(',');
           if (parts.length >= 2) {
-            let x = parseFloat(parts[0]);
-            let y = parseFloat(parts[1]);
+            let x = parseFloat(parts[0].trim());
+            let y = parseFloat(parts[1].trim());
             if (!isNaN(x) && !isNaN(y)) {
-              if (x <= 1.0 && y <= 1.0 && (x > 0 || y > 0)) { x *= 100; y *= 100; }
-              pts.push({ x: x, y: y });
+              if (x <= 1.05 && y <= 1.05) { x *= 100; y *= 100; }
+              points.push({ x: x, y: y });
             }
           }
         }
-        experimentalData = pts;
-        computeModel();
+        if (points.length > 0) {
+          experimentalData = points;
+          computeModel();
+        }
       };
       reader.readAsText(file);
     }
 
-    ['slider_dg', 'slider_khomo', 'slider_ee0', 'slider_g', 'slider_temp'].forEach(id => {
-      document.getElementById(id).addEventListener('input', computeModel);
-    });
-
-    window.onload = computeModel;
+    window.onload = function() {
+      ['slider_dg', 'slider_khomo', 'slider_ee0', 'slider_g', 'slider_temp'].forEach(id => {
+        document.getElementById(id).addEventListener('input', computeModel);
+      });
+      computeModel();
+    };
   </script>
 </body>
 </html>
 """
+
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
