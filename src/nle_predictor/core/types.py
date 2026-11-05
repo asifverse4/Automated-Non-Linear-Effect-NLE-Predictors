@@ -13,6 +13,7 @@ class ModelType(str, Enum):
     """Supported asymmetric catalysis kinetic/thermodynamic models."""
     KAGAN_RESERVOIR = "kagan_ml2"
     KAGAN_ACTIVE_DIMER = "kagan_active"
+    KAGAN_OLIGOMER = "kagan_oligomer"
     NOYORI_AGGREGATION = "noyori_daib"
 
 
