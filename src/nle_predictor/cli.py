@@ -15,15 +15,20 @@ import numpy as np
 
 from nle_predictor.core.constants import DEFAULT_TEMP
 from nle_predictor.core.xyz import validate_xyz_file
+from nle_predictor.fitting.bootstrap import run_bootstrap_monte_carlo
 from nle_predictor.fitting.experimental_fit import fit_kagan_reservoir, load_experimental_csv
+from nle_predictor.fitting.temperature_fit import fit_van_t_hoff_global, load_multi_temperature_csv
 from nle_predictor.models.diagnostics import analyze_nle_diagnostics
 from nle_predictor.models.kagan_active import KaganActiveDimerModel
 from nle_predictor.models.kagan_ml2 import (
     NLECalculator,
     write_sensitivity_report,
 )
+from nle_predictor.models.kagan_oligomers import KaganOligomerModel
 from nle_predictor.models.noyori_daib import NoyoriDAIBModel
+from nle_predictor.models.soai import SoaiAutocatalysisModel
 from nle_predictor.qc.crest import ConformerSampler
+from nle_predictor.qc.gallery import ChiralLigandGallery
 from nle_predictor.qc.orca import (
     Config,
     DFTEvaluator,
@@ -101,6 +106,74 @@ def build_parser() -> argparse.ArgumentParser:
     )
     dash_parser.add_argument("--output", type=str, default="manuscript/interactive_dashboard.html", help="Output HTML filepath")
     dash_parser.add_argument("--open", action="store_true", help="Automatically open generated dashboard in default browser")
+
+    # 6. OLIGOMER Subcommand (Trimer / Tetramer higher-order models)
+    oligomer_parser = subparsers.add_parser(
+        "oligomer",
+        help="Simulate higher-order Kagan oligomer models (ML3 trimers / ML4 tetramers)",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    oligomer_parser.add_argument("--order", type=int, default=3, choices=[3, 4], help="Oligomer order (3=trimer, 4=tetramer)")
+    oligomer_parser.add_argument("--delta-g", type=float, default=-1.5, help="Free energy difference Delta G in kcal/mol")
+    oligomer_parser.add_argument("--khomo", type=float, default=1e4, help="Homochiral association constant")
+    oligomer_parser.add_argument("--temp", type=float, default=DEFAULT_TEMP, help="Temperature in Kelvin")
+    oligomer_parser.add_argument("--ee0", type=float, default=1.0, help="Intrinsic monomer enantioselectivity")
+    oligomer_parser.add_argument("--active", action="store_true", help="Enable active oligomer catalysis")
+    oligomer_parser.add_argument("--outdir", type=str, default="oligomer_outputs", help="Output directory")
+
+    # 7. SOAI Subcommand (Asymmetric Autocatalysis)
+    soai_parser = subparsers.add_parser(
+        "soai",
+        help="Simulate Soai asymmetric autocatalysis temporal trajectories and hyper-amplification",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    soai_parser.add_argument("--seed-ee", type=float, default=0.02, help="Seed enantiomeric excess fraction (e.g. 0.02 for 2 percent)")
+    soai_parser.add_argument("--seed-cat", type=float, default=0.002, help="Initial seed catalyst concentration (M)")
+    soai_parser.add_argument("--k-auto", type=float, default=5e4, help="Autocatalytic rate constant")
+    soai_parser.add_argument("--k-uncat", type=float, default=1e-7, help="Uncatalyzed background rate constant")
+    soai_parser.add_argument("--k-hetero", type=float, default=5e4, help="Heterochiral mutual inhibition constant")
+    soai_parser.add_argument("--t-final", type=float, default=3600.0, help="Final reaction time in seconds")
+    soai_parser.add_argument("--batch-curve", action="store_true", help="Simulate full NLE curve across seed ee range")
+    soai_parser.add_argument("--outdir", type=str, default="soai_outputs", help="Output directory")
+
+    # 8. VTHOFF Subcommand (Multi-temperature van 't Hoff fit)
+    vthoff_parser = subparsers.add_parser(
+        "vthoff",
+        help="Global multi-temperature van 't Hoff deconvolution for Delta Delta H° and Delta Delta S°",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    vthoff_parser.add_argument("--data", type=str, required=True, help="Path to multi-temperature CSV file")
+    vthoff_parser.add_argument("--khomo", type=float, default=1e5, help="Homochiral association constant")
+    vthoff_parser.add_argument("--fit-ee0", action="store_true", help="Simultaneously fit intrinsic ee_0")
+    vthoff_parser.add_argument("--outdir", type=str, default="vthoff_outputs", help="Output directory")
+
+    # 9. BOOTSTRAP Subcommand (Monte Carlo uncertainty quantification)
+    boot_parser = subparsers.add_parser(
+        "bootstrap",
+        help="Bootstrap Monte Carlo non-parametric parameter error propagation and confidence intervals",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    boot_parser.add_argument("--data", type=str, required=True, help="Path to experimental CSV file")
+    boot_parser.add_argument("--n-bootstraps", type=int, default=500, help="Number of bootstrap replications")
+    boot_parser.add_argument("--method", type=str, default="residual", choices=["residual", "case"], help="Resampling method")
+    boot_parser.add_argument("--fit-ee0", action="store_true", help="Simultaneously fit intrinsic ee_0")
+    boot_parser.add_argument("--temp", type=float, default=DEFAULT_TEMP, help="Reaction temperature in Kelvin")
+    boot_parser.add_argument("--khomo", type=float, default=1e5, help="Homochiral association constant")
+    boot_parser.add_argument("--outdir", type=str, default="bootstrap_outputs", help="Output directory")
+
+    # 10. GALLERY Subcommand (Chiral Ligand Gallery & DFT Generator)
+    gallery_parser = subparsers.add_parser(
+        "gallery",
+        help="Inspect benchmark chiral ligand gallery and generate production DFT input files",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    gallery_parser.add_argument("--ligand", type=str, default="binol", choices=["daib", "binol", "pybox"], help="Chiral ligand scaffold")
+    gallery_parser.add_argument("--software", type=str, default="orca", choices=["orca", "gaussian", "qchem"], help="Target QC software")
+    gallery_parser.add_argument("--functional", type=str, default="B3LYP", help="DFT functional")
+    gallery_parser.add_argument("--basis", type=str, default="def2-TZVP", help="Basis set")
+    gallery_parser.add_argument("--dispersion", type=str, default="D4", help="Dispersion correction")
+    gallery_parser.add_argument("--solvent", type=str, default="toluene", help="Implicit dielectric solvent")
+    gallery_parser.add_argument("--outdir", type=str, default="gallery_inputs", help="Output directory for generated inputs")
 
     return parser
 
@@ -249,6 +322,196 @@ def execute_dashboard(args: argparse.Namespace) -> None:
     print("Open the HTML file in any modern web browser to interact with the models.\n")
 
 
+def execute_oligomer(args: argparse.Namespace) -> None:
+    """Execute higher-order Kagan oligomer (trimer / tetramer) simulation."""
+    os.makedirs(args.outdir, exist_ok=True)
+    model = KaganOligomerModel(order=args.order, temp=args.temp)
+    ee_cats = np.linspace(0.0, 1.0, 101)
+
+    res = model.simulate(
+        ee_cats,
+        delta_g_kcal=args.delta_g,
+        k_homo=args.khomo,
+        ee_0=args.ee0,
+        active_aggregates=args.active,
+    )
+
+    csv_path = os.path.join(args.outdir, f"oligomer_order{args.order}_nle.csv")
+    calc = NLECalculator(temp=args.temp)
+    calc.export_data(res.ee_catalyst, res.ee_product, filepath=csv_path)
+
+    fig_path = os.path.join(args.outdir, f"oligomer_order{args.order}_curve.png")
+    plot_nle_with_experimental(
+        res,
+        save_path=fig_path,
+        title=f"Kagan ML{args.order} {'Trimer' if args.order==3 else 'Tetramer'} NLE Curve",
+    )
+
+    diag = analyze_nle_diagnostics(res.ee_catalyst, res.ee_product)
+
+    print("\n" + "=" * 50)
+    print(f" HIGHER-ORDER KAGAN AGGREGATION MODEL (ML{args.order})")
+    print("=" * 50)
+    print(f"Model Type:            {res.model_name}")
+    print(f"Classification:        {res.classification}")
+    print(f"Delta G (hetero-homo): {args.delta_g:.3f} kcal/mol")
+    print(f"Initial Slope:         {diag.initial_slope:.3f}")
+    print(f"Max Amplification:     {diag.max_amplification:.3f}")
+    if diag.inflection_points:
+        print(f"Inflection Points:     {diag.inflection_points}")
+    print(f"Results saved to:      {args.outdir}")
+    print("=" * 50 + "\n")
+
+
+def execute_soai(args: argparse.Namespace) -> None:
+    """Execute Soai asymmetric autocatalysis simulation."""
+    os.makedirs(args.outdir, exist_ok=True)
+    model = SoaiAutocatalysisModel(
+        k_uncat=args.k_uncat,
+        k_auto=args.k_auto,
+        k_hetero=args.k_hetero,
+    )
+
+    if args.batch_curve:
+        ee_cats = np.linspace(0.0, 1.0, 51)
+        res = model.simulate(ee_cats, seed_catalyst=args.seed_cat, t_final=args.t_final)
+        csv_path = os.path.join(args.outdir, "soai_nle_curve.csv")
+        calc = NLECalculator(temp=DEFAULT_TEMP)
+        calc.export_data(res.ee_catalyst, res.ee_product, filepath=csv_path)
+
+        fig_path = os.path.join(args.outdir, "soai_nle_curve.png")
+        plot_nle_with_experimental(res, save_path=fig_path, title="Soai Asymmetric Autocatalysis NLE Curve")
+        print("\n--- Soai Batch NLE Curve Generated ---")
+        print(f"Classification:    {res.classification}")
+        print(f"Max Amplification: {res.max_amplification:.2f}x")
+        print(f"Results saved to:  {args.outdir}\n")
+    else:
+        traj = model.simulate_trajectory(
+            seed_catalyst=args.seed_cat,
+            seed_ee=args.seed_ee,
+            t_span=(0.0, args.t_final),
+            n_points=200,
+        )
+        csv_path = os.path.join(args.outdir, "soai_kinetic_trajectory.csv")
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            import csv
+            writer = csv.writer(f)
+            writer.writerow(["time_s", "substrate_A", "product_R", "product_S", "ee_cumulative", "conversion"])
+            for i in range(len(traj.time)):
+                writer.writerow([
+                    f"{traj.time[i]:.2f}",
+                    f"{traj.substrate_a[i]:.6e}",
+                    f"{traj.product_r[i]:.6e}",
+                    f"{traj.product_s[i]:.6e}",
+                    f"{traj.ee_cumulative[i]:.4f}",
+                    f"{traj.conversion[i]:.4f}",
+                ])
+
+        print("\n" + "=" * 55)
+        print(" SOAI ASYMMETRIC AUTOCATALYSIS KINETIC TRAJECTORY")
+        print("=" * 55)
+        print(f"Seed ee:               {args.seed_ee * 100:.2f}%")
+        print(f"Final Product ee:      {traj.final_ee * 100:.2f}%")
+        print(f"Amplification Factor:  {traj.amplification_factor:.2f}x")
+        print(f"Reaction Half-Life:    {traj.half_life_time:.1f} s")
+        print(f"Final Conversion:      {traj.conversion[-1] * 100:.1f}%")
+        print(f"Trajectory CSV saved:  {csv_path}")
+        print("=" * 55 + "\n")
+
+
+def execute_vthoff(args: argparse.Namespace) -> None:
+    """Execute global multi-temperature van 't Hoff fit."""
+    os.makedirs(args.outdir, exist_ok=True)
+    datasets = load_multi_temperature_csv(args.data)
+
+    res = fit_van_t_hoff_global(
+        datasets,
+        k_homo=args.khomo,
+        fit_ee_0=args.fit_ee0,
+    )
+
+    print("\n" + "=" * 60)
+    print(" GLOBAL MULTI-TEMPERATURE VAN 'T HOFF DECONVOLUTION")
+    print("=" * 60)
+    print(f"Temperatures Analyzed:  {res.fitted_temperatures} K")
+    print(f"Delta Delta H°:         {res.delta_delta_h_kcal:.4f} ± {res.delta_delta_h_stderr:.4f} kcal/mol")
+    print(f"Delta Delta S°:         {res.delta_delta_s_cal_mol_k:.4f} ± {res.delta_delta_s_stderr:.4f} cal/(mol*K)")
+    print(f"Enthalpy-Entropy Corr:  {res.correlation_coeff:.4f}")
+    if res.isoinversion_temp_k:
+        err_str = f" ± {res.isoinversion_stderr:.1f} K" if res.isoinversion_stderr else ""
+        print(f"Isoinversion Temp:      {res.isoinversion_temp_k:.1f}{err_str}")
+    print(f"Multi-T Fit R²:         {res.r_squared:.4f}")
+    print(f"RMSE:                   {res.rmse*100:.2f}%")
+    print("=" * 60 + "\n")
+
+    summary_path = os.path.join(args.outdir, "vthoff_summary.json")
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(res.to_dict(), f, indent=2)
+
+
+def execute_bootstrap(args: argparse.Namespace) -> None:
+    """Execute bootstrap Monte Carlo parameter uncertainty analysis."""
+    os.makedirs(args.outdir, exist_ok=True)
+    cat_exp, prod_exp = load_experimental_csv(args.data)
+
+    print(f"\nRunning {args.n_bootstraps} bootstrap replications ({args.method} method)...")
+    boot_res = run_bootstrap_monte_carlo(
+        cat_exp,
+        prod_exp,
+        n_bootstraps=args.n_bootstraps,
+        method=args.method,
+        temp=args.temp,
+        k_homo=args.khomo,
+        fit_ee_0=args.fit_ee0,
+    )
+
+    print("\n" + "=" * 60)
+    print(" BOOTSTRAP MONTE CARLO UNCERTAINTY QUANTIFICATION")
+    print("=" * 60)
+    print(f"Replications Converged: {int(boot_res.converged_fraction * boot_res.n_bootstraps)} / {boot_res.n_bootstraps}")
+    print(f"Delta G (Median):       {boot_res.delta_g_median:.4f} kcal/mol")
+    print(f"Delta G (Mean ± Std):   {boot_res.delta_g_mean:.4f} ± {boot_res.delta_g_std:.4f} kcal/mol")
+    print(f"Delta G (95% CI):       [{boot_res.delta_g_ci_95[0]:.4f}, {boot_res.delta_g_ci_95[1]:.4f}] kcal/mol")
+    print(f"Parameter Bias:         {boot_res.bias_delta_g:.5f} kcal/mol")
+    print(f"K_ratio (95% CI):       [{boot_res.k_ratio_ci_95[0]:.3f}, {boot_res.k_ratio_ci_95[1]:.3f}]")
+    if boot_res.fit_ee_0 and boot_res.ee_0_ci_95:
+        print(f"Intrinsic ee_0 (95% CI):[{boot_res.ee_0_ci_95[0]*100:.1f}%, {boot_res.ee_0_ci_95[1]*100:.1f}%]")
+        print(f"Correlation (dG vs ee0):{boot_res.parameter_correlation:.4f}")
+    print("=" * 60 + "\n")
+
+    summary_path = os.path.join(args.outdir, "bootstrap_summary.json")
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(boot_res.to_dict(), f, indent=2)
+
+
+def execute_gallery(args: argparse.Namespace) -> None:
+    """Export benchmark chiral ligand QC input files."""
+    gallery = ChiralLigandGallery()
+    meta = gallery.get_metadata(args.ligand)
+
+    rr_path, rs_path = gallery.export_pair(
+        args.ligand,
+        output_dir=args.outdir,
+        software=args.software,
+        functional=args.functional,
+        basis=args.basis,
+        dispersion=args.dispersion,
+        solvent=args.solvent,
+    )
+
+    print("\n" + "=" * 60)
+    print(" CHIRAL LIGAND CONFORMER GALLERY & DFT GENERATOR")
+    print("=" * 60)
+    print(f"Ligand Scaffold:        {meta.name.upper()} ({meta.full_name})")
+    print(f"Reaction Chemistry:     {meta.reaction_class}")
+    print(f"Software Target:        {args.software.upper()}")
+    print(f"Level of Theory:        {args.functional} / {args.basis} ({args.dispersion})")
+    print(f"Solvation Model:        {args.solvent}")
+    print(f"Homochiral Input (RR):  {rr_path}")
+    print(f"Heterochiral Input (RS):{rs_path}")
+    print("=" * 60 + "\n")
+
+
 def _prompt(prompt_text: str, default: str) -> str:
     """Prompt user with default value."""
     try:
@@ -277,10 +540,15 @@ def run_interactive_app() -> None:
         print("  [5] Analyze NLE Curve Diagnostics")
         print("  [6] Regenerate 600 DPI Manuscript Figures (1-5)")
         print("  [7] Launch / Generate Interactive HTML Dashboard")
+        print("  [8] Higher-Order Kagan Oligomer Simulation (ML3/ML4)")
+        print("  [9] Soai Asymmetric Autocatalysis & Kinetic Trajectory")
+        print("  [10] Global Multi-Temperature van 't Hoff Deconvolution")
+        print("  [11] Bootstrap Monte Carlo Parameter Uncertainty")
+        print("  [12] Chiral Ligand 3D Conformer Gallery & DFT Generator")
         print("  [0] Exit")
         print("-" * 70)
 
-        choice = _prompt("Select option (0-7)", "1")
+        choice = _prompt("Select option (0-12)", "1")
 
         if choice == "0":
             print("\nExiting NLE-Predictor. Goodbye!\n")
@@ -388,6 +656,108 @@ def run_interactive_app() -> None:
                 import webbrowser
                 webbrowser.open(f"file://{os.path.abspath(dash_path)}")
 
+        elif choice == "8":
+            print("\n--- Higher-Order Kagan Oligomer Simulation (ML3/ML4) ---")
+            order_str = _prompt("Enter aggregation order (3=trimer, 4=tetramer)", "3")
+            dg_str = _prompt("Enter Delta G (hetero - homo) in kcal/mol", "-1.5")
+            ee0_str = _prompt("Enter intrinsic monomer ee0", "1.0")
+            active_str = _prompt("Enable active aggregate catalysis? (y/n)", "n")
+            outdir = _prompt("Enter output directory", "oligomer_outputs")
+            try:
+                args = argparse.Namespace(
+                    order=int(order_str),
+                    delta_g=float(dg_str),
+                    khomo=1e4,
+                    temp=DEFAULT_TEMP,
+                    ee0=float(ee0_str),
+                    active=active_str.lower().startswith("y"),
+                    outdir=outdir,
+                )
+                execute_oligomer(args)
+            except Exception as e:
+                print(f"Error during oligomer simulation: {e}")
+
+        elif choice == "9":
+            print("\n--- Soai Asymmetric Autocatalysis & Kinetic Trajectory ---")
+            seed_ee_str = _prompt("Enter seed enantiomeric excess (e.g. 0.02 for 2%)", "0.02")
+            seed_cat_str = _prompt("Enter seed catalyst concentration (M)", "0.002")
+            t_final_str = _prompt("Enter total reaction time in seconds", "3600")
+            outdir = _prompt("Enter output directory", "soai_outputs")
+            try:
+                args = argparse.Namespace(
+                    seed_ee=float(seed_ee_str),
+                    seed_cat=float(seed_cat_str),
+                    k_auto=5e4,
+                    k_uncat=1e-7,
+                    k_hetero=5e4,
+                    t_final=float(t_final_str),
+                    batch_curve=False,
+                    outdir=outdir,
+                )
+                execute_soai(args)
+            except Exception as e:
+                print(f"Error during Soai simulation: {e}")
+
+        elif choice == "10":
+            print("\n--- Global Multi-Temperature van 't Hoff Deconvolution ---")
+            csv_path = _prompt("Path to multi-temperature CSV (temperature,ee_cat,ee_prod)", "")
+            if not csv_path:
+                print("CSV path cannot be empty.")
+            else:
+                outdir = _prompt("Enter output directory", "vthoff_outputs")
+                try:
+                    args = argparse.Namespace(
+                        data=csv_path,
+                        khomo=1e5,
+                        fit_ee0=False,
+                        outdir=outdir,
+                    )
+                    execute_vthoff(args)
+                except Exception as e:
+                    print(f"Error during van 't Hoff fit: {e}")
+
+        elif choice == "11":
+            print("\n--- Bootstrap Monte Carlo Parameter Uncertainty ---")
+            default_csv = os.path.join("examples", "benchmarks", "datasets", "kagan_amplification.csv")
+            csv_path = _prompt("Path to experimental CSV (ee_cat,ee_prod)", default_csv)
+            n_boot_str = _prompt("Enter number of bootstrap replications", "200")
+            method = _prompt("Resampling method ('residual' or 'case')", "residual")
+            outdir = _prompt("Enter output directory", "bootstrap_outputs")
+            try:
+                args = argparse.Namespace(
+                    data=csv_path,
+                    n_bootstraps=int(n_boot_str),
+                    method=method,
+                    fit_ee0=False,
+                    temp=DEFAULT_TEMP,
+                    khomo=1e5,
+                    outdir=outdir,
+                )
+                execute_bootstrap(args)
+            except Exception as e:
+                print(f"Error during bootstrap analysis: {e}")
+
+        elif choice == "12":
+            print("\n--- Chiral Ligand 3D Conformer Gallery & DFT Generator ---")
+            gallery = ChiralLigandGallery()
+            print(f"Available ligands: {gallery.list_ligands()}")
+            ligand = _prompt("Select ligand ('daib', 'binol', 'pybox')", "binol")
+            software = _prompt("Target software ('orca', 'gaussian', 'qchem')", "orca")
+            outdir = _prompt("Enter output directory for generated inputs", "gallery_inputs")
+            try:
+                args = argparse.Namespace(
+                    ligand=ligand,
+                    software=software,
+                    functional="B3LYP",
+                    basis="def2-TZVP",
+                    dispersion="D4",
+                    solvent="toluene",
+                    outdir=outdir,
+                )
+                execute_gallery(args)
+            except Exception as e:
+                print(f"Error during gallery export: {e}")
+
         try:
             input("\nPress Enter to return to main menu...")
         except (EOFError, KeyboardInterrupt):
@@ -411,7 +781,18 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     # If first argument is not a subcommand and arguments look like standard flags
     # (e.g. `nle_predictor.py --mock` or `nle_predictor.py --rr ...`), default to 'run'
-    subcommands = {"run", "simulate", "fit", "diagnostics", "dashboard"}
+    subcommands = {
+        "run",
+        "simulate",
+        "fit",
+        "diagnostics",
+        "dashboard",
+        "oligomer",
+        "soai",
+        "vthoff",
+        "bootstrap",
+        "gallery",
+    }
     if argv and argv[0] not in subcommands and not argv[0].startswith("-h") and not argv[0] == "--help":
         argv = ["run"] + argv
 
@@ -425,6 +806,16 @@ def main(argv: Optional[List[str]] = None) -> None:
         execute_diagnostics(args)
     elif args.subcommand == "dashboard":
         execute_dashboard(args)
+    elif args.subcommand == "oligomer":
+        execute_oligomer(args)
+    elif args.subcommand == "soai":
+        execute_soai(args)
+    elif args.subcommand == "vthoff":
+        execute_vthoff(args)
+    elif args.subcommand == "bootstrap":
+        execute_bootstrap(args)
+    elif args.subcommand == "gallery":
+        execute_gallery(args)
     elif args.subcommand == "run":
         # Run quantum workflow via root nle_predictor
         import nle_predictor

@@ -30,9 +30,18 @@ from nle_predictor.core.xyz import (
     validate_xyz_file,
     write_xyz,
 )
+from nle_predictor.fitting.bootstrap import (
+    BootstrapResult,
+    run_bootstrap_monte_carlo,
+)
 from nle_predictor.fitting.experimental_fit import (
     fit_kagan_reservoir,
     load_experimental_csv,
+)
+from nle_predictor.fitting.temperature_fit import (
+    VanTHoffFittingResult,
+    fit_van_t_hoff_global,
+    load_multi_temperature_csv,
 )
 from nle_predictor.models.base import NLEModel
 from nle_predictor.models.diagnostics import (
@@ -49,8 +58,11 @@ from nle_predictor.models.kagan_ml2 import (
     NLECalculator,
     write_sensitivity_report,
 )
+from nle_predictor.models.kagan_oligomers import KaganOligomerModel
 from nle_predictor.models.noyori_daib import NoyoriDAIBModel
+from nle_predictor.models.soai import SoaiAutocatalysisModel, SoaiTrajectory
 from nle_predictor.qc.crest import ConformerSampler
+from nle_predictor.qc.gallery import ChiralLigandGallery, LigandMetadata
 from nle_predictor.qc.gaussian import (
     extract_gaussian_free_energy,
     validate_gaussian_output,
@@ -118,6 +130,11 @@ __all__ = [
     "fit_kagan_reservoir",
     "load_experimental_csv",
     "FittingResult",
+    "VanTHoffFittingResult",
+    "fit_van_t_hoff_global",
+    "load_multi_temperature_csv",
+    "BootstrapResult",
+    "run_bootstrap_monte_carlo",
     # Visualization
     "plot_nle_with_experimental",
     "plot_monomer_speciation",
@@ -126,7 +143,10 @@ __all__ = [
     "NLEModel",
     "NLECalculator",
     "KaganActiveDimerModel",
+    "KaganOligomerModel",
     "NoyoriDAIBModel",
+    "SoaiAutocatalysisModel",
+    "SoaiTrajectory",
     "write_sensitivity_report",
     "NLEDiagnostics",
     "analyze_nle_diagnostics",
@@ -139,6 +159,8 @@ __all__ = [
     "Config",
     "DFTEvaluator",
     "ConformerSampler",
+    "ChiralLigandGallery",
+    "LigandMetadata",
     "validate_orca_output",
     "collect_software_versions",
     "validate_gaussian_output",

@@ -81,4 +81,52 @@ def test_cli_dashboard(tmp_path):
     assert os.path.getsize(dash_out) > 5000
 
 
+def test_cli_oligomer(tmp_path):
+    outdir = tmp_path / "oligomer"
+    main(["oligomer", "--order", "3", "--delta-g", "-1.5", "--outdir", str(outdir)])
+
+    assert os.path.isfile(outdir / "oligomer_order3_nle.csv")
+    assert os.path.isfile(outdir / "oligomer_order3_curve.png")
+
+
+def test_cli_soai_trajectory(tmp_path):
+    outdir = tmp_path / "soai_traj"
+    main(["soai", "--seed-ee", "0.05", "--t-final", "500", "--outdir", str(outdir)])
+
+    assert os.path.isfile(outdir / "soai_kinetic_trajectory.csv")
+
+
+def test_cli_vthoff(tmp_path):
+    csv_file = tmp_path / "multi_t.csv"
+    csv_file.write_text(
+        "temperature,ee_cat,ee_prod\n"
+        "273.15,0.1,0.25\n"
+        "273.15,0.5,0.75\n"
+        "298.15,0.1,0.20\n"
+        "298.15,0.5,0.70\n"
+    )
+    outdir = tmp_path / "vthoff"
+    main(["vthoff", "--data", str(csv_file), "--outdir", str(outdir)])
+
+    assert os.path.isfile(outdir / "vthoff_summary.json")
+
+
+def test_cli_bootstrap(tmp_path):
+    csv_file = tmp_path / "boot_data.csv"
+    csv_file.write_text("ee_cat,ee_prod\n0.1,0.2\n0.3,0.5\n0.5,0.7\n0.7,0.85\n0.9,0.98\n")
+    outdir = tmp_path / "boot"
+    main(["bootstrap", "--data", str(csv_file), "--n-bootstraps", "20", "--outdir", str(outdir)])
+
+    assert os.path.isfile(outdir / "bootstrap_summary.json")
+
+
+def test_cli_gallery(tmp_path):
+    outdir = tmp_path / "inputs"
+    main(["gallery", "--ligand", "binol", "--software", "orca", "--outdir", str(outdir)])
+
+    assert os.path.isfile(outdir / "binol_RR.inp")
+    assert os.path.isfile(outdir / "binol_RS.inp")
+
+
+
 
