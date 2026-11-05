@@ -14,6 +14,7 @@ class ModelType(str, Enum):
     KAGAN_RESERVOIR = "kagan_ml2"
     KAGAN_ACTIVE_DIMER = "kagan_active"
     KAGAN_OLIGOMER = "kagan_oligomer"
+    SOAI_AUTOCATALYSIS = "soai_autocatalysis"
     NOYORI_AGGREGATION = "noyori_daib"
 
 

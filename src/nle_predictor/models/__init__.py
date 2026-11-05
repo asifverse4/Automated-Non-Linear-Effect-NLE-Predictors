@@ -14,6 +14,7 @@ from nle_predictor.models.kagan_active import KaganActiveDimerModel
 from nle_predictor.models.kagan_ml2 import NLECalculator, write_sensitivity_report
 from nle_predictor.models.kagan_oligomers import KaganOligomerModel
 from nle_predictor.models.noyori_daib import NoyoriDAIBModel
+from nle_predictor.models.soai import SoaiAutocatalysisModel, SoaiTrajectory
 
 __all__ = [
     "NLEModel",
@@ -21,6 +22,8 @@ __all__ = [
     "KaganActiveDimerModel",
     "KaganOligomerModel",
     "NoyoriDAIBModel",
+    "SoaiAutocatalysisModel",
+    "SoaiTrajectory",
     "write_sensitivity_report",
     "NLEDiagnostics",
     "analyze_nle_diagnostics",
